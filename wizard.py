@@ -23,7 +23,7 @@ class GameState:
 
         try:
             response = requests.get(url, auth=self.user, verify=self.pem)
-        except requests.exceptions.RequestException as e:
+        except requests.exceptions.ConnectionError as e:
             raise ConnectionError()
 
         # Check if the response contains the "gameData" field, which indicates the user is in a game
@@ -37,7 +37,7 @@ class GameState:
 
         try:
             response = requests.get(url, verify=self.pem)
-        except requests.exceptions.RequestException as e:
+        except requests.exceptions.ConnectionError as e:
             raise ConnectionError()
 
         if response.status_code == 200:
@@ -53,7 +53,7 @@ class GameState:
 
             try:
                 response = requests.get(url, verify=self.pem)
-            except requests.exceptions.RequestException as e:
+            except requests.exceptions.ConnectionError as e:
                 raise ConnectionError()
             else:
                 if response.status_code == 200:
@@ -67,7 +67,7 @@ class GameState:
 
         try:
             response = requests.get(url, verify=self.pem)
-        except requests.exceptions.RequestException as e:
+        except requests.exceptions.ConnectionError as e:
             raise ConnectionError
         else:
             if response.status_code == 200:
