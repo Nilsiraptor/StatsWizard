@@ -1,6 +1,6 @@
 import requests
 
-from authorization import get_pem_port
+from authorization import get_pem_port, ConnectionError
 
 
 class GameState:
@@ -8,8 +8,8 @@ class GameState:
     def __init__(self):
         try:
             password, port = get_pem_port()
-        except ValueError:
-            raise ValueError("No League Client found!")
+        except ConnectionError:
+            raise ConnectionError("No League Client found!")
         else:
             self.user = "riot", password
 
@@ -24,13 +24,13 @@ class GameState:
         try:
             response = requests.get(url, auth=self.user, verify=self.pem)
         except requests.exceptions.RequestException as e:
-            return None
+            raise ConnectionError()
 
         # Check if the response contains the "gameData" field, which indicates the user is in a game
         if response.status_code == 200:
             return response.json()
         else:
-            return None
+            raise ConnectionError()
 
     def get_data(self, data):
         url = "https://127.0.0.1:2999/liveclientdata/" + data
@@ -38,10 +38,12 @@ class GameState:
         try:
             response = requests.get(url, verify=self.pem)
         except requests.exceptions.RequestException as e:
-            return False
+            raise ConnectionError()
 
         if response.status_code == 200:
             data = response.json()
+        else:
+            raise ConnectionError()
 
         return data
 
@@ -52,10 +54,12 @@ class GameState:
             try:
                 response = requests.get(url, verify=self.pem)
             except requests.exceptions.RequestException as e:
-                return False
+                raise ConnectionError()
             else:
                 if response.status_code == 200:
                     name = response.json()
+                else:
+                    raise ConnectionError()
         else:
             name = player
 
@@ -64,7 +68,7 @@ class GameState:
         try:
             response = requests.get(url, verify=self.pem)
         except requests.exceptions.RequestException as e:
-            return False
+            raise ConnectionError
         else:
             if response.status_code == 200:
                 players = response.json()
@@ -77,7 +81,7 @@ class GameState:
 if __name__ ==  "__main__":
     try:
         state = GameState()
-    except ValueError:
+    except ConnectionError:
         print("No League Client found!")
     else:
         print(state.check_game_state())

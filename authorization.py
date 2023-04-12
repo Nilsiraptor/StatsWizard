@@ -2,6 +2,10 @@ import os
 import psutil
 
 
+class ConnectionError(Exception):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
 def get_pem_port(process_name='LeagueClientUx.exe'):
 
     # Find the process
@@ -12,7 +16,7 @@ def get_pem_port(process_name='LeagueClientUx.exe'):
             break
 
     if process is None:
-        raise ValueError(f"No Process called '{process_name}' found!")
+        raise ConnectionError(f"No Process called '{process_name}' found!")
     else:
         # Get the path of the process executable
         executable_path = process.exe()
@@ -28,9 +32,9 @@ def get_pem_port(process_name='LeagueClientUx.exe'):
                     port = lockfile_data[2]
                     return password, port
                 else:
-                    raise ValueError("Lockfile data is invalid")
+                    raise ConnectionError("Lockfile data is invalid")
         else:
-            raise ValueError("Lockfile not found")
+            raise ConnectionError("Lockfile not found")
 
 if __name__ == "__main__":
     print(get_pem_port())

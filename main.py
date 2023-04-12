@@ -129,37 +129,31 @@ def update():
 def wait_for_game_start():
     try:
         state = wizard.check_game_state()
-    except ValueError:
+    except ConnectionError:
+        status_bar.config(text="Ready - Searching League Client")
         root.after(1000, search_league_client)
     else:
-        if state is None:
-            status_bar.config(text="Ready - Searching League Client")
-            root.after(1000, search_league_client)
-            return
-        elif state == "None":
-            state = "League Client found"
-        elif state == "Lobby":
-            state = "In Lobby"
-        elif state == "ChampSelect":
-            state = "In ChampSelect"
+        if state == "None":
+            status_bar.config(text=f"League Client found - Waiting for game start")
         elif state == "GameStart":
             status_bar.config(text="Game is starting")
             return
         elif state == "InProgress":
-            status_bar.config(text="Game found - Collecting Data")
+            status_bar.config(text="Game found - Waiting Data")
             group_box.config(text="Waiting for game data")
             root.after(10000, update)
             return
-        status_bar.config(text=f"{state} - Waiting for game start")
+        else:
+            status_bar.config(text=f"{state} - Waiting for game start")
 
-    root.after(1000, wait_for_game_start)
+        root.after(1000, wait_for_game_start)
 
 
 def search_league_client():
     global wizard
     try:
         wizard = GameState()
-    except ValueError:
+    except ConnectionError:
         status_bar.config(text="Ready - Searching League Client")
         root.after(1000, search_league_client)
     else:
