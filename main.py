@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import tkinter as tk
 from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -38,7 +40,7 @@ group_box = tk.LabelFrame(top_frame, text='Not in a game')
 group_box.pack(side=tk.RIGHT, padx=10, pady=10)
 
 # Create Stat objects for each stat and add it to the group box
-stats = ["level", "kills", "deaths", "assists", "minions", "wards", "item_gold", "turrets", "inhibs", "heralds", "dragons", "barons", "aces", "open_nexus"]
+stats = ["level", "kills", "deaths", "assists", "minions", "wards", "item_gold", "turrets", "inhibs", "heralds", "dragons", "barons", "aces"]
 stat_objects = {}
 for i, stat in enumerate(stats):
     stat_objects[stat] = Stat(stat, group_box)
@@ -65,12 +67,17 @@ status_bar.pack(side=tk.BOTTOM, fill=tk.X)
 team = None
 
 def update():
+    global team
+
     # Check iff the game is still in Progress
     state = wizard.check_game_state()
     if state not in ["InProgress", "Reconnect"]:
         team = None
+        status_bar.config(text="Game over - Waiting for new game")
         root.after(10000, wait_for_game_start)
         return
+
+    status_bar.config(text="Ingame - Analysing data")
 
     # Check the team of the player
     if team is None:
@@ -81,41 +88,72 @@ def update():
 
     mode = data["gameMode"]
     time = int(data["gameTime"])
-    group_box.config(text=f"{mode}\u2003(\u200A{time//60:02}:{time%60:02}\u200A)")
+    group_box.config(text=f"{mode} \u200A(\u200A{time//60:02}:{time%60:02}\u200A)")
 
     # Calculate playerStats
     data = wizard.get_data("playerlist")
-    stats_ally = {}
-    stats_enemy = {}
+    stats_ally = defaultdict(int)
+    stats_enemy = defaultdict(int)
     for player in data:
-        if player.team == team:
-            stats_ally["level"] = stats_ally.get("level", 0) + player.level
+        if player["team"] == team:
+            stats_ally["level"] += player["level"]
             for id, value in player["scores"].items():
-                stats_ally[id] = stats_ally.get(id, 0) + value
+                stats_ally[id] += value
         else:
-            stats_enemy["level"] = stats_enemy.get("level", 0) + player.level
+            stats_enemy["level"] += player["level"]
             for id, value in player["scores"].items():
-                stats_enemy[id] = stats_enemy.get(id, 0) + value
+                stats_enemy[id] += value
 
     # Calculating team stats
     data = wizard.get_data("eventdata")
 
     for event in data["Events"]:
-        if event["EventName"] == "TurretKill":
+        if event["EventName"] == "TurretKilled":
             if wizard.get_team(event["KillerName"]) == team:
-                stats_ally["turrets"] = stats_ally.get("turrets", 0) + 1
+                stats_ally["turrets"] += 1
             else:
-                stats_enemy["turrets"] = stats_enemy.get("turrets", 0) + 1
+                stats_enemy["turrets"] += 1
 
-        elif event["EventName"] == "InhibKill":
+        elif event["EventName"] == "InhibKilled":
             if wizard.get_team(event["KillerName"]) == team:
-                stats_ally["inhibs"] = stats_ally.get("inhibs", 0) + 1
+                stats_ally["inhibs"] += 1
             else:
-                stats_enemy["inhibs"] = stats_enemy.get("inhibs", 0) + 1
+                stats_enemy["inhibs"] += 1
+
+        elif event["EventName"] == "HeraldKill":
+            if wizard.get_team(event["KillerName"]) == team:
+                stats_ally["heralds"] += 1
+            else:
+                stats_enemy["heralds"] += 1
+
+        elif event["EventName"] == "DragonKill":
+            if wizard.get_team(event["KillerName"]) == team:
+                stats_ally["dragons"] += 1
+            else:
+                stats_enemy["dragons"] += 1
+
+        elif event["EventName"] == "BaronKill":
+            if wizard.get_team(event["KillerName"]) == team:
+                stats_ally["barons"] += 1
+            else:
+                stats_enemy["barons"] += 1
+
+        elif event["EventName"] == "Ace":
+            if event["AcingTeam"] == team:
+                stats_ally["aces"] += 1
+            else:
+                stats_enemy["aces"] += 1
+
 
     for id in stat_objects.keys():
-        stat_objects[id].left_stat.config(text=f"{stats_ally.get(id, 0)}")
-        stat_objects[id].right_stat.config(text=f"{stats_enemy.get(id, 0)}")
+        stat_objects[id].left_stat.config(text=f"{stats_ally[id]}")
+        stat_objects[id].right_stat.config(text=f"{stats_enemy[id]}")
+
+    stat_objects["minions"].left_stat.config(text=f"{stats_ally['creepScore']}")
+    stat_objects["minions"].right_stat.config(text=f"{stats_enemy['creepScore']}")
+
+    stat_objects["wards"].left_stat.config(text=f"{stats_ally['wardScore']}")
+    stat_objects["wards"].right_stat.config(text=f"{stats_enemy['wardScore']}")
 
     root.after(1000, update)
 
@@ -133,7 +171,7 @@ def wait_for_game_start():
             status_bar.config(text="Game is starting")
             return
         elif state == "InProgress":
-            status_bar.config(text="Game found - Waiting Data")
+            status_bar.config(text="Game found - Waiting for data")
             group_box.config(text="Waiting for game data")
             root.after(10000, update)
             return
