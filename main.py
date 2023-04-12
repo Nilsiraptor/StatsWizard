@@ -3,7 +3,7 @@ from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.pyplot import subplots
 
-from authorization import get_pem_port
+from authorization import ConnectionError
 from wizard import GameState
 
 class Stat:
@@ -97,12 +97,6 @@ def update():
             for id, value in player["scores"].items():
                 stats_enemy[id] = stats_enemy.get(id, 0) + value
 
-    for id in stats_ally.keys():
-        stats_ally[id] /= 5
-
-    for id in stats_enemy.keys():
-        stats_enemy[id] /= 5
-
     # Calculating team stats
     data = wizard.get_data("eventdata")
 
@@ -159,6 +153,7 @@ def search_league_client():
     else:
         status_bar.config(text="League Client found - Waiting for game start")
         root.after(1000,  wait_for_game_start)
+
 
 root.after(1000, search_league_client)
 root.mainloop()
