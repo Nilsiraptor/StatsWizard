@@ -1,3 +1,4 @@
+from collections import defaultdict
 import requests
 
 from authorization import get_pem_port, ConnectionError
@@ -38,6 +39,8 @@ class GameState:
         try:
             response = requests.get(url, verify=self.pem)
         except requests.exceptions.ConnectionError as e:
+            raise ConnectionError()
+        except http.client.RemoteDisconnected as e:
             raise ConnectionError()
 
         if response.status_code == 200:
