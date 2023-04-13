@@ -152,8 +152,8 @@ def update():
     stat_objects["minions"].left_stat.config(text=f"{stats_ally['creepScore']}")
     stat_objects["minions"].right_stat.config(text=f"{stats_enemy['creepScore']}")
 
-    stat_objects["wards"].left_stat.config(text=f"{stats_ally['wardScore']}")
-    stat_objects["wards"].right_stat.config(text=f"{stats_enemy['wardScore']}")
+    stat_objects["wards"].left_stat.config(text=f"{stats_ally['wardScore']:.0f}")
+    stat_objects["wards"].right_stat.config(text=f"{stats_enemy['wardScore']:.0f}")
 
     root.after(1000, update)
 
