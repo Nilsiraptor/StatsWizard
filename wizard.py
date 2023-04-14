@@ -5,6 +5,14 @@ import http
 from authorization import get_pem_port, ConnectionError
 
 
+class GameOverWin(Exception):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+class GameOverLose(Exception):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
 class GameState:
 
     def __init__(self):
@@ -137,6 +145,11 @@ class GameState:
                     scores["ally_inhibs"] += 1
                 else:
                     scores["enemy_inhibs"] += 1
+            elif event["EventName"] == "GameEnd":
+                if event["Result"] == "Win":
+                    raise GameOverWin()
+                else:
+                    raise GameOverLose()
 
         return scores
 
@@ -147,4 +160,4 @@ if __name__ ==  "__main__":
         print("No League Client found!")
     else:
         print(state.check_game_state())
-        print(state.get_scores())
+        print("\n", state.get_scores())
