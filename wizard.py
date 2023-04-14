@@ -101,6 +101,8 @@ class GameState:
                 team_id = "enemy"
                 enemy_member.append(player["summonerName"])
 
+            scores[f"{team_id}_{player['position']}_level"] += player["level"]
+
             for id, value in player["scores"].items():
                 scores[f"{team_id}_{player['position']}_{id}"] += value
 
@@ -110,9 +112,9 @@ class GameState:
         for event in event_data:
             if event["EventName"] in ["HeraldKill", "DragonKill", "BaronKill"]:
                 if event["KillerName"] in ally_member:
-                    scores[f"ally_{event['EventName']}"] += 1
+                    scores[f"ally_{event['EventName'][:-4].lower()}s"] += 1
                 else:
-                    scores[f"enemy_{event['EventName']}"] += 1
+                    scores[f"enemy_{event['EventName'][:-4].lower()}s"] += 1
 
             elif event["EventName"] == "Ace":
                 if event["AcingTeam"] == team:
