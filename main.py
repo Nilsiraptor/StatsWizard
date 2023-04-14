@@ -74,80 +74,28 @@ def update():
     if state not in ["InProgress", "Reconnect"]:
         team = None
         status_bar.config(text="Game over - Waiting for new game")
-        root.after(10000, wait_for_game_start)
+        root.after(1000, wait_for_game_start)
         return
 
     status_bar.config(text="Ingame - Analysing data")
 
-    # Check the team of the player
-    if team is None:
-        team = wizard.get_team()
+    scores = wizard.get_scores()
 
-    # Get gameMode and gameTime
-    data = wizard.get_data("gamestats")
-
-    mode = data["gameMode"]
-    time = int(data["gameTime"])
-    group_box.config(text=f"{mode} \u200A(\u200A{time//60:02}:{time%60:02}\u200A)")
-
-    # Calculate playerStats
-    data = wizard.get_data("playerlist")
     stats_ally = defaultdict(int)
     stats_enemy = defaultdict(int)
-    for player in data:
-        if player["team"] == team:
-            stats_ally["level"] += player["level"]
-            for id, value in player["scores"].items():
-                stats_ally[id] += value
+
+    for key, value in scores.items():
+        key_parts = key.split("_")
+
+        if key_parts[0] == "ally":
+            stats_ally[key_parts[-1]] += value
         else:
-            stats_enemy["level"] += player["level"]
-            for id, value in player["scores"].items():
-                stats_enemy[id] += value
-
-    # Calculating team stats
-    data = wizard.get_data("eventdata")
-
-    for event in data["Events"]:
-        if event["EventName"] == "TurretKilled":
-            if wizard.get_team(event["KillerName"]) == team:
-                stats_ally["turrets"] += 1
-            else:
-                stats_enemy["turrets"] += 1
-
-        elif event["EventName"] == "InhibKilled":
-            if wizard.get_team(event["KillerName"]) == team:
-                stats_ally["inhibs"] += 1
-            else:
-                stats_enemy["inhibs"] += 1
-
-        elif event["EventName"] == "HeraldKill":
-            if wizard.get_team(event["KillerName"]) == team:
-                stats_ally["heralds"] += 1
-            else:
-                stats_enemy["heralds"] += 1
-
-        elif event["EventName"] == "DragonKill":
-            if wizard.get_team(event["KillerName"]) == team:
-                stats_ally["dragons"] += 1
-            else:
-                stats_enemy["dragons"] += 1
-
-        elif event["EventName"] == "BaronKill":
-            if wizard.get_team(event["KillerName"]) == team:
-                stats_ally["barons"] += 1
-            else:
-                stats_enemy["barons"] += 1
-
-        elif event["EventName"] == "Ace":
-            if event["AcingTeam"] == team:
-                stats_ally["aces"] += 1
-            else:
-                stats_enemy["aces"] += 1
+            stats_enemy[key_parts[-1]] += value
 
 
-    for id in stat_objects.keys():
-        stat_objects[id].left_stat.config(text=f"{stats_ally[id]}")
-        stat_objects[id].right_stat.config(text=f"{stats_enemy[id]}")
+    for key, value in stat_objects.items():
+        stat_objects[id].left_stat.config(text=f"{value}")
+        stat_objects[id].right_stat.config(text=f"{value}")
 
     stat_objects["minions"].left_stat.config(text=f"{stats_ally['creepScore']}")
     stat_objects["minions"].right_stat.config(text=f"{stats_enemy['creepScore']}")
@@ -173,7 +121,7 @@ def wait_for_game_start():
         elif state == "InProgress":
             status_bar.config(text="Game found - Waiting for data")
             group_box.config(text="Waiting for game data")
-            root.after(10000, update)
+            root.after(1000, update)
             return
         else:
             status_bar.config(text=f"{state} - Waiting for game start")
