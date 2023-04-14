@@ -73,6 +73,7 @@ def update():
     state = wizard.check_game_state()
     if state not in ["InProgress", "Reconnect"]:
         status_bar.config(text="Game over - Waiting for new game")
+        group_box.config(text="Not in a game")
         root.after(1000, wait_for_game_start)
         return
 
