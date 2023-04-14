@@ -33,7 +33,7 @@ frame.pack(fill=tk.BOTH, expand=True)
 
 # Create a frame for the top section
 top_frame = tk.Frame(frame)
-top_frame.pack(fill=tk.BOTH)
+top_frame.pack(fill=tk.BOTH, expand=True)
 
 # Add a group box to the top right
 group_box = tk.LabelFrame(top_frame, text='Not in a game')
@@ -47,16 +47,16 @@ for i, stat in enumerate(stats):
     stat_objects[stat].grid(row=i)
 
 # Add a canvas to the top left
-canvas = tk.Canvas(top_frame)
-canvas.pack(side=tk.LEFT, fill=tk.BOTH, padx=10, pady=10)
+parent_canvas = tk.Canvas(top_frame)
+parent_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
 # Add a Matplotlib plot to the canvas
-fig, ax = subplots(figsize=(6, 3), dpi=100, facecolor="#f0f0f0")
+fig, ax = subplots(figsize=(6.5, 3.25), dpi=96, facecolor="#f0f0f0")
 ax.set_xlim(-10.1, 0.1)
 ax.set_ylim(-0.02, 1.02)
 ax.grid()
 fig.tight_layout()
-canvas = FigureCanvasTkAgg(fig, master=canvas)
+canvas = FigureCanvasTkAgg(fig, master=parent_canvas)
 canvas.draw()
 canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
@@ -140,6 +140,9 @@ def search_league_client():
         status_bar.config(text="League Client found - Waiting for game start")
         root.after(1000,  wait_for_game_start)
 
+# Set the minimum size to the current size
+root.update_idletasks() # Updates the window dimensions
+root.minsize(root.winfo_width(), root.winfo_height())
 
 root.after(1000, search_league_client)
 root.mainloop()
