@@ -6,7 +6,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.pyplot import subplots
 
 from authorization import ConnectionError
-from wizard import GameState
+from wizard import GameState, GameOver
 
 class Stat:
     def __init__(self, name, parent=None):
@@ -81,6 +81,9 @@ def update():
         scores = wizard.get_scores()
     except ConnectionError as e:
         status_bar.config(text="Ingame - Waiting for data")
+    except GameOver:
+        status_bar.config(text="Game Over - Waiting for new game")
+        group_box.config(text="Game Over")
     else:
         status_bar.config(text="Ingame - Analysing data")
 
