@@ -2,7 +2,7 @@ import pandas as pd
 import time
 import os
 
-from wizard import GameState
+from wizard import GameState, GameOverWin, GameOverLose
 from authorization import ConnectionError
 
 def main():
@@ -34,12 +34,24 @@ def main():
                     wizard = None
                     time.sleep(1)
                     continue
+                except GameOverWin:
+                    try:
+                        df.insert(len(df.columns), "result", "WIN")
+                    except ValueError:
+                        pass
+                    continue
+                except GameOverLose:
+                    try:
+                        df.insert(len(df.columns), "result", "LOSE")
+                    except ValueError:
+                        pass
+                    continue
 
                 new_row = pd.DataFrame([scores])
 
                 df = pd.concat([df, new_row], ignore_index=True)
 
-                time.sleep(10)
+                time.sleep(8)
 
             else:
                 if df is not None:
