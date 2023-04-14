@@ -45,7 +45,7 @@ def main():
                 if df is not None:
                     mode = df["gameMode"][0]
                     try:
-                        df.to_csv(f"GameData\\{mode}\\{time.strftime(r'%Y-%m-%d_%H_%M_%S')}.csv", na_rep="0")
+                        df.to_csv(f"GameData\\{mode}\\{time.strftime(r'%Y-%m-%d_%H-%M-%S')}.csv", na_rep="0")
                     except OSError as e:
                         os.makedirs(f"GameData\\{mode}", exist_ok=True)
                     else:
