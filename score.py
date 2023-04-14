@@ -27,6 +27,7 @@ def main():
             if state == "InProgress":
                 if df is None:
                     df = pd.DataFrame()
+                    print("Game in progress. Starting data collection...")
 
                 try:
                     scores = wizard.get_scores()
@@ -35,12 +36,14 @@ def main():
                     time.sleep(1)
                     continue
                 except GameOverWin:
+                    print("Game over. You won!")
                     try:
                         df.insert(len(df.columns), "result", "WIN")
                     except ValueError:
                         pass
                     continue
                 except GameOverLose:
+                    print("Game over. You lost!")
                     try:
                         df.insert(len(df.columns), "result", "LOSE")
                     except ValueError:
@@ -62,6 +65,7 @@ def main():
                         os.makedirs(f"GameData\\{mode}", exist_ok=True)
                     else:
                         df = None
+                        print("Data saved!")
 
 if __name__ == "__main__":
     main()
