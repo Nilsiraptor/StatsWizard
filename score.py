@@ -45,3 +45,6 @@ def main():
                     mode = df["gameMode"][0]
                     df.to_csv(f"GameData\\{mode}\\{time.strftime(r'%Y-%m-%d_%H_%M_%S')}.csv")
                     df = None
+
+if __name__ == "__main__":
+    main()
