@@ -68,15 +68,10 @@ canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 status_bar = tk.Label(root, text='Ready - Searching League Client', bd=1, relief=tk.SUNKEN, anchor=tk.W)
 status_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
-team = None
-
 def update():
-    global team
-
-    # Check iff the game is still in Progress
+    # Check if the game is still in Progress
     state = wizard.check_game_state()
     if state not in ["InProgress", "Reconnect"]:
-        team = None
         status_bar.config(text="Game over - Waiting for new game")
         root.after(1000, wait_for_game_start)
         return
