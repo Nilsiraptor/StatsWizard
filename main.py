@@ -81,31 +81,42 @@ def update():
         root.after(1000, wait_for_game_start)
         return
 
-    status_bar.config(text="Ingame - Analysing data")
+    try:
+        scores = wizard.get_scores()
+    except ConnectionError as e:
+        status_bar.config(text="Ingame - Waiting for data")
+    else:
+        status_bar.config(text="Ingame - Analysing data")
 
-    scores = wizard.get_scores()
+        time = int(scores["gameTime"])
+        mode = scores["gameMode"]
 
-    stats_ally = defaultdict(int)
-    stats_enemy = defaultdict(int)
+        group_box.config(text=f"{mode} \u200A({time//60:02}:{time%60:02})")
 
-    for key, value in scores.items():
-        key_parts = key.split("_")
+        stats_ally = defaultdict(int)
+        stats_enemy = defaultdict(int)
 
-        if key_parts[0] == "ally":
-            stats_ally[key_parts[-1]] += value
-        else:
-            stats_enemy[key_parts[-1]] += value
+        for key, value in scores.items():
+            if key in ["gameMode", "gameTime"]:
+                continue
+
+            key_parts = key.split("_")
+
+            if key_parts[0] == "ally":
+                stats_ally[key_parts[-1]] += value
+            else:
+                stats_enemy[key_parts[-1]] += value
 
 
-    for key, value in stat_objects.items():
-        stat_objects[id].left_stat.config(text=f"{value}")
-        stat_objects[id].right_stat.config(text=f"{value}")
+        for key in stat_objects.keys():
+            stat_objects[key].left_stat.config(text=f"{stats_ally[key]}")
+            stat_objects[key].right_stat.config(text=f"{stats_enemy[key]}")
 
-    stat_objects["minions"].left_stat.config(text=f"{stats_ally['creepScore']}")
-    stat_objects["minions"].right_stat.config(text=f"{stats_enemy['creepScore']}")
+        stat_objects["minions"].left_stat.config(text=f"{stats_ally['creepScore']}")
+        stat_objects["minions"].right_stat.config(text=f"{stats_enemy['creepScore']}")
 
-    stat_objects["wards"].left_stat.config(text=f"{stats_ally['wardScore']:.0f}")
-    stat_objects["wards"].right_stat.config(text=f"{stats_enemy['wardScore']:.0f}")
+        stat_objects["wards"].left_stat.config(text=f"{stats_ally['wardScore']:.0f}")
+        stat_objects["wards"].right_stat.config(text=f"{stats_enemy['wardScore']:.0f}")
 
     root.after(1000, update)
 
