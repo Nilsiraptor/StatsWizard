@@ -51,7 +51,11 @@ parent_canvas = tk.Canvas(top_frame)
 parent_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
 # Add a Matplotlib plot to the canvas
-fig, ax = subplots(figsize=(6.5, 3.25), dpi=96, facecolor="#f0f0f0")
+root.update_idletasks()
+dpi = root.winfo_fpixels("1i")
+height = group_box.winfo_height()
+
+fig, ax = subplots(figsize=(2*height/dpi, height/dpi), dpi=dpi, facecolor="#f0f0f0")
 ax.set_xlim(-10.1, 0.1)
 ax.set_ylim(-0.02, 1.02)
 ax.grid()
