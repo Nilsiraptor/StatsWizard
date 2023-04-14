@@ -4,12 +4,15 @@ import http
 
 from authorization import get_pem_port, ConnectionError
 
-
-class GameOverWin(Exception):
+class GameOver(Exception):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-class GameOverLose(Exception):
+class GameOverWin(GameOver):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+class GameOverLose(GameOver):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
