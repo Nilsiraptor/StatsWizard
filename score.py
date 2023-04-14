@@ -1,5 +1,6 @@
 import pandas as pd
 import time
+import os
 
 from wizard import GameState
 from authorization import ConnectionError
@@ -43,8 +44,12 @@ def main():
             else:
                 if df is not None:
                     mode = df["gameMode"][0]
-                    df.to_csv(f"GameData\\{mode}\\{time.strftime(r'%Y-%m-%d_%H_%M_%S')}.csv")
-                    df = None
+                    try:
+                        df.to_csv(f"GameData\\{mode}\\{time.strftime(r'%Y-%m-%d_%H_%M_%S')}.csv")
+                    except OSError as e:
+                        os.makedirs(f"GameData\\{mode}", exist_ok=True)
+                    else:
+                        df = None
 
 if __name__ == "__main__":
     main()
