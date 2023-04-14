@@ -145,3 +145,4 @@ if __name__ ==  "__main__":
         print("No League Client found!")
     else:
         print(state.check_game_state())
+        print(state.get_scores())
