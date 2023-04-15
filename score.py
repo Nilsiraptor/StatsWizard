@@ -41,6 +41,7 @@ def main():
                         df.insert(len(df.columns), "result", "WIN")
                     except ValueError:
                         pass
+                    time.sleep(1)
                     continue
                 except GameOverLose:
                     print("Game over. You lost!")
@@ -48,6 +49,7 @@ def main():
                         df.insert(len(df.columns), "result", "LOSE")
                     except ValueError:
                         pass
+                    time.sleep(1)
                     continue
 
                 new_row = pd.DataFrame([scores])
