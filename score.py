@@ -28,35 +28,38 @@ def main():
                 if df is None:
                     df = pd.DataFrame()
                     print("Game in progress. Starting data collection...")
+                    t = time.time()
 
-                try:
-                    scores = wizard.get_scores()
-                except ConnectionError:
-                    wizard = None
-                    time.sleep(1)
-                    continue
-                except GameOverWin:
-                    print("Game over. You won!")
+                if time.time() - t >= 8:
+
                     try:
-                        df.insert(len(df.columns), "result", "WIN")
-                    except ValueError:
-                        pass
-                    time.sleep(1)
-                    continue
-                except GameOverLose:
-                    print("Game over. You lost!")
-                    try:
-                        df.insert(len(df.columns), "result", "LOSE")
-                    except ValueError:
-                        pass
-                    time.sleep(1)
-                    continue
+                        scores = wizard.get_scores()
+                    except ConnectionError:
+                        wizard = None
+                        time.sleep(1)
+                        continue
+                    except GameOverWin:
+                        print("Game over. You won!")
+                        try:
+                            df.insert(len(df.columns), "result", "WIN")
+                        except ValueError:
+                            pass
+                        time.sleep(1)
+                        continue
+                    except GameOverLose:
+                        print("Game over. You lost!")
+                        try:
+                            df.insert(len(df.columns), "result", "LOSE")
+                        except ValueError:
+                            pass
+                        time.sleep(1)
+                        continue
 
-                new_row = pd.DataFrame([scores])
+                    new_row = pd.DataFrame([scores])
 
-                df = pd.concat([df, new_row], ignore_index=True)
+                    df = pd.concat([df, new_row], ignore_index=True)
 
-                time.sleep(8)
+                    time.sleep(0.1)
 
             else:
                 if df is not None:
