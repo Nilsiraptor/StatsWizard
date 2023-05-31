@@ -3,6 +3,7 @@ import requests
 import http
 
 from authorization import get_pem_port, ConnectionError
+from dragon import get_gold_value
 
 class GameOver(Exception):
     def __init__(self, *args, **kwargs):
@@ -155,6 +156,25 @@ class GameState:
                     raise GameOverLose()
 
         return scores
+
+    def get_item_gold(self, include_consumables=False):
+        team = self.get_team()
+        ally_items = []
+        enemy_items = []
+
+        player_data = self.get_data("playerlist")
+
+        for p in player_data:
+            items = [item["itemID"] for item in p["items"] if include_consumables or not item["consumable"]]
+            if p["team"] == team:
+                ally_items += items
+            else:
+                enemy_items += items
+
+        ally_gold = get_gold_value(ally_items)
+        enemy_gold = get_gold_value(enemy_items)
+
+        return ally_gold, enemy_gold
 
 if __name__ ==  "__main__":
     try:
