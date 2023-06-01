@@ -24,6 +24,6 @@ def get_gold_value(items):
 
     total_value = 0
     for id in items:
-        total_value += data[id]["gold"]["total"]
+        total_value += data[str(id)]["gold"]["total"]
 
     return total_value
