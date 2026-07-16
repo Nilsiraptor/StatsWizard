@@ -1,0 +1,17 @@
+# System process discovery and information
+psutil==7.2.2
+
+# HTTP requests for API communication
+requests==2.34.2
+
+# Data manipulation and analysis
+pandas==3.0.3
+
+# Data visualization and plotting
+matplotlib==3.11.0
+
+# Machine learning and statistical modeling
+scikit-learn==1.9.0
+
+# Numerical computing
+numpy==2.5.1
