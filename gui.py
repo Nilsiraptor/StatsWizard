@@ -27,8 +27,6 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Stats Wizard")
         self.setWindowIcon(QIcon("my_icon.ico"))
 
-        # self.resize(600, 400)
-
         self.load_font("Inter.ttc")
         self.setFont(self.font)
 
@@ -40,13 +38,14 @@ class MainWindow(QMainWindow):
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(0)
 
-        self.graph = LiveGraph(dpi=self.screen().logicalDotsPerInch())
+        self.graph = LiveGraph(parent=self, dpi=self.screen().logicalDotsPerInch())
         self.layout.addWidget(self.graph, stretch=1)
 
         self.stats_box = StatDisplay(self.font)
         self.layout.addWidget(self.stats_box, stretch=0)
 
         self.show()
+        self.setMinimumSize(self.size())
 
         self.windowHandle().screenChanged.connect(self.graph.sync_matplotlib_dpi)
 
@@ -78,7 +77,7 @@ class MainWindow(QMainWindow):
 
 class LiveGraph(FigureCanvasQTAgg):
 
-    def __init__(self, dpi=96):
+    def __init__(self, parent=None, dpi=96):
         font_manager.fontManager.addfont("Inter.ttc")
         rcParams["font.family"] = "Inter"
         rcParams["font.weight"] = "medium"
@@ -87,9 +86,10 @@ class LiveGraph(FigureCanvasQTAgg):
         rcParams["figure.frameon"] = False
         rcParams["figure.constrained_layout.use"] = True
 
-        self.fig = Figure(dpi=dpi, figsize=(5, 1))
+        self.fig = Figure(dpi=dpi, figsize=(4, 1))
         self.ax = self.fig.add_subplot()
         super().__init__(self.fig)
+        self.setParent(parent)
 
         # show example curve
         x = np.linspace(-120, 0, 121, True)
@@ -97,7 +97,7 @@ class LiveGraph(FigureCanvasQTAgg):
         y[0:20] = np.zeros(20).reshape(-1, 1)
 
         interp = Akima1DInterpolator(x, 50*y+50, method="makima")
-        show_x = np.linspace(-120, 0, 501, True)
+        show_x = np.linspace(-120, 0, 1001, True)
 
         self.line = self.ax.plot(show_x, interp(show_x), c="darkorchid")
 
@@ -155,18 +155,20 @@ class StatDisplay(QWidget):
             blue_text.setText("0")
 
             red_text.setAlignment(Qt.AlignmentFlag.AlignRight)
-            name_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            name_text.setAlignment(Qt.AlignmentFlag.AlignHCenter)
             blue_text.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
             red_text.setFont(font)
             name_text.setFont(font)
             blue_text.setFont(font)
 
-            minWidth = 25
-            red_text.setMinimumWidth(minWidth)
-            blue_text.setMinimumWidth(minWidth)
+            min_width = 25
+            red_text.setMinimumWidth(min_width)
+            blue_text.setMinimumWidth(min_width)
 
             self.stats[stat] = red_text, name_text, blue_text
+
+        self.layout.setRowStretch(len(self.stats), 1)
 
     def title(self, string):
         return string.replace("_", " ").title()
