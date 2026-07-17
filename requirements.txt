@@ -15,3 +15,6 @@ scikit-learn==1.9.0
 
 # Numerical computing
 numpy==2.5.1
+
+# Graphical User Interface
+PyQt6==6.11.0
