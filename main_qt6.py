@@ -14,4 +14,8 @@ app.setStyleSheet(StyleSheet)
 
 window = MainWindow()
 
+graph = window.get_graph()
+stats = window.get_stats()
+
+
 sys.exit(app.exec())

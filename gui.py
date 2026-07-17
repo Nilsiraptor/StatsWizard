@@ -69,6 +69,12 @@ class MainWindow(QMainWindow):
         for feat in features:
             self.font.setFeature(QFont.Tag.fromString(feat), 1)
 
+    def get_graph(self):
+        return self.graph
+
+    def get_stats(self):
+        return self.stats_box.get_stats()
+
 
 class LiveGraph(FigureCanvasQTAgg):
 
@@ -134,7 +140,7 @@ class StatDisplay(QWidget):
 
         self.stat_names = ["level", "kills", "deaths", "assists", "minions", "wards", "item_gold", "turrets", "inhibs", "heralds", "dragons", "barons", "aces"]
 
-        self.stats = []
+        self.stats = {}
         for r, stat in enumerate(self.stat_names):
             red_text = QLabel()
             name_text = QLabel()
@@ -160,7 +166,10 @@ class StatDisplay(QWidget):
             red_text.setMinimumWidth(minWidth)
             blue_text.setMinimumWidth(minWidth)
 
-            self.stats.append((red_text, name_text, blue_text))
+            self.stats[stat] = red_text, name_text, blue_text
 
     def title(self, string):
         return string.replace("_", " ").title()
+
+    def get_stats(self):
+        return self.stats
