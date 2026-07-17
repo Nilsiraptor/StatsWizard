@@ -1,8 +1,10 @@
 QWidget {
-    background-color: aqua;
+    background-color: white;
+    padding: 0px;
+    margin: 0px;
 }
 
 QStatusBar {
     border-top: 1px solid grey;
-    background-color: snow;
+    background-color: whitesmoke
 }
