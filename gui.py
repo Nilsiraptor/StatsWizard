@@ -1,6 +1,6 @@
 import sys
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QGroupBox, QLabel
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QLabel
 from PyQt6.QtWidgets import QHBoxLayout, QGridLayout
 from PyQt6.QtGui import QFont, QFontDatabase, QIcon
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
@@ -29,7 +29,7 @@ class MainWindow(QMainWindow):
 
         # self.resize(600, 400)
 
-        self.loadFont("Inter.ttc")
+        self.load_font("Inter.ttc")
         self.setFont(self.font)
 
         self.statusBar().setFont(self.font)
@@ -43,18 +43,18 @@ class MainWindow(QMainWindow):
         self.graph = LiveGraph(dpi=self.screen().logicalDotsPerInch())
         self.layout.addWidget(self.graph, stretch=1)
 
-        self.statsBox = StatDisplay(self.font)
-        self.layout.addWidget(self.statsBox, stretch=0)
+        self.stats_box = StatDisplay(self.font)
+        self.layout.addWidget(self.stats_box, stretch=0)
 
         self.show()
 
-        self.windowHandle().screenChanged.connect(self.graph.syncMatplotlibDPI)
+        self.windowHandle().screenChanged.connect(self.graph.sync_matplotlib_dpi)
 
-    def loadFont(self, path):
+    def load_font(self, path):
         font_id = QFontDatabase.addApplicationFont(path)
 
         if font_id == -1:
-            raise Exception()
+            raise FileNotFoundError("Could not load inter.ttc")
 
         # Get the actual family name recognized by the system (usually "Inter")
         font_families = QFontDatabase.applicationFontFamilies(font_id)
@@ -63,16 +63,16 @@ class MainWindow(QMainWindow):
         self.font = QFont(self.font_family)
         self.font.setPointSize(10)
         self.font.setWeight(QFont.Weight.Medium)
-        self.enableFontFeatures(FONT_FEATURES)
+        self.enable_font_features(FONT_FEATURES)
 
-    def enableFontFeatures(self, features):
+    def enable_font_features(self, features):
         for feat in features:
             self.font.setFeature(QFont.Tag.fromString(feat), 1)
 
 
 class LiveGraph(FigureCanvasQTAgg):
 
-    def __init__(self, parent=None, dpi=96):
+    def __init__(self, dpi=96):
         font_manager.fontManager.addfont("Inter.ttc")
         rcParams["font.family"] = "Inter"
         rcParams["font.weight"] = "medium"
@@ -109,15 +109,15 @@ class LiveGraph(FigureCanvasQTAgg):
         # self.ax.set_xlabel("Timeline", fontfeatures=FONT_FEATURES)
         self.ax.set_xlim(-120, 0)
 
-        self.updateFontFeatures()
-        # self.mpl_connect("draw_event", self.updateFontFeatures)
+        self.update_font_features()
+        # self.mpl_connect("draw_event", self.update_font_features)
 
-    def syncMatplotlibDPI(self, new_screen):
+    def sync_matplotlib_dpi(self, new_screen):
         new_dpi = new_screen.logicalDotsPerInch()
         self.fig.set_dpi(new_dpi)
         self.draw_idle()
 
-    def updateFontFeatures(self, *args):
+    def update_font_features(self, *args):
         for label in self.ax.get_xticklabels() + self.ax.get_yticklabels():
             label.set_fontfeatures(FONT_FEATURES)
 
@@ -132,35 +132,35 @@ class StatDisplay(QWidget):
         self.layout = QGridLayout()
         self.setLayout(self.layout)
 
-        self.statNames = ["level", "kills", "deaths", "assists", "minions", "wards", "item_gold", "turrets", "inhibs", "heralds", "dragons", "barons", "aces"]
+        self.stat_names = ["level", "kills", "deaths", "assists", "minions", "wards", "item_gold", "turrets", "inhibs", "heralds", "dragons", "barons", "aces"]
 
         self.stats = []
-        for r, stat in enumerate(self.statNames):
-            redText = QLabel()
-            nameText = QLabel()
-            blueText = QLabel()
+        for r, stat in enumerate(self.stat_names):
+            red_text = QLabel()
+            name_text = QLabel()
+            blue_text = QLabel()
 
-            self.layout.addWidget(redText, r, 0)
-            self.layout.addWidget(nameText, r, 1)
-            self.layout.addWidget(blueText, r, 2)
+            self.layout.addWidget(red_text, r, 0)
+            self.layout.addWidget(name_text, r, 1)
+            self.layout.addWidget(blue_text, r, 2)
 
-            redText.setText("0")
-            nameText.setText(self.title(stat))
-            blueText.setText("0")
+            red_text.setText("0")
+            name_text.setText(self.title(stat))
+            blue_text.setText("0")
 
-            redText.setAlignment(Qt.AlignmentFlag.AlignRight)
-            nameText.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            blueText.setAlignment(Qt.AlignmentFlag.AlignLeft)
+            red_text.setAlignment(Qt.AlignmentFlag.AlignRight)
+            name_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            blue_text.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
-            redText.setFont(font)
-            nameText.setFont(font)
-            blueText.setFont(font)
+            red_text.setFont(font)
+            name_text.setFont(font)
+            blue_text.setFont(font)
 
             minWidth = 25
-            redText.setMinimumWidth(minWidth)
-            blueText.setMinimumWidth(minWidth)
+            red_text.setMinimumWidth(minWidth)
+            blue_text.setMinimumWidth(minWidth)
 
-            self.stats.append((redText, nameText, blueText))
+            self.stats.append((red_text, name_text, blue_text))
 
     def title(self, string):
         return string.replace("_", " ").title()
