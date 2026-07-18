@@ -1,3 +1,10 @@
+"""Filters game data CSV files by removing those without a 'result' column.
+
+This module scans the CLASSIC data directory for CSV files, loads each
+one, and deletes any file that does not contain a 'result' column.
+Only files with a 'result' column are retained for training purposes.
+"""
+
 import os
 import pandas as pd
 

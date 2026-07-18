@@ -1,3 +1,9 @@
+"""Collects game data and saves it to CSV files for model training.
+
+This module runs as a background data collector that connects to the
+League of Legends client, gathers game statistics at regular intervals,
+and saves them as CSV files organized by game mode.
+"""
 import pandas as pd
 import time
 import os
@@ -5,7 +11,14 @@ import os
 from wizard import GameState, GameOverWin, GameOverLose
 from authorization import ConnectionError
 
+
 def main():
+    """Runs the continuous game data collection loop.
+
+    Connects to the League client, collects scores every 8 seconds
+    while a game is in progress, and saves the data as CSV files
+    organized by game mode.
+    """
     wizard = None
     state = None
     df = None
@@ -71,6 +84,7 @@ def main():
                     else:
                         df = None
                         print("Data saved!")
+
 
 if __name__ == "__main__":
     main()
