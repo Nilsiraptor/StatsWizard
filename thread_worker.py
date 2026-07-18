@@ -32,7 +32,7 @@ class ThreadWorker(QThread):
                 try:
                     self.api = GameAPI()
                 except ConnectionError as e:
-                    continue
+                    if self.running: continue
 
             curr_state = self.api.check_game_state()
 
@@ -46,10 +46,10 @@ class ThreadWorker(QThread):
                 except ConnectionError as e:
                     self.state_changed.emit(GameState.NO_CLIENT)
                     last_state = GameState.NO_CLIENT
-                    continue
+                    if self.running: continue
 
                 if "result" in live_scores:
-                    continue
+                    if self.running: continue
 
                 gold = self.api.get_item_gold()
 
