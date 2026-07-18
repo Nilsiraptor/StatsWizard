@@ -1,3 +1,9 @@
+"""Provides the graphical user interface for the Stats Wizard application.
+
+This module implements the main window, a live graph display, and a
+statistics panel that shows real-time game data during League of
+Legends matches.
+"""
 import sys
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QLabel
@@ -24,8 +30,14 @@ FONT_FEATURES = ["calt", "tnum", "dlig",
 
 
 class MainWindow(QMainWindow):
+    """The main application window for the Stats Wizard.
+
+    Displays a live graph of win probability and a statistics panel
+    that updates in real-time as game data is collected.
+    """
 
     def __init__(self):
+        """Initializes the main window and starts the background worker."""
         super().__init__()
         self.setWindowTitle("Stats Wizard")
         self.setWindowIcon(QIcon("my_icon.ico"))
@@ -59,6 +71,14 @@ class MainWindow(QMainWindow):
         self.windowHandle().screenChanged.connect(self.graph.sync_matplotlib_dpi)
 
     def load_font(self, path):
+        """Loads a custom font from the given file path.
+
+        Args:
+            path: The file path to the font file to load.
+
+        Raises:
+            FileNotFoundError: If the font file could not be loaded.
+        """
         font_id = QFontDatabase.addApplicationFont(path)
 
         if font_id == -1:
@@ -74,6 +94,11 @@ class MainWindow(QMainWindow):
         self.enable_font_features(FONT_FEATURES)
 
     def enable_font_features(self, features):
+        """Enables OpenType font features on the current font.
+
+        Args:
+          features: A list of font feature tag strings to enable.
+        """
         for feat in features:
             self.font.setFeature(QFont.Tag.fromString(feat), 1)
 
@@ -84,6 +109,11 @@ class MainWindow(QMainWindow):
         return self.stats_box.get_stats()
 
     def change_status(self, new_status):
+        """Updates the status bar message based on the current game state.
+
+        Args:
+          new_status: The new game state enum value.
+        """
         match new_status:
             case GameState.NO_CLIENT:
                 self.statusBar().showMessage("Suche den League Client...")
@@ -106,8 +136,19 @@ class MainWindow(QMainWindow):
 
 
 class LiveGraph(FigureCanvasQTAgg):
+    """A matplotlib-based graph widget that displays win probability.
+
+    Shows a live interpolated curve of win probability over the game
+    timeline, with configurable axis limits and tick formatting.
+    """
 
     def __init__(self, parent=None, dpi=96):
+        """Initializes the graph with an example noise curve.
+
+        Args:
+          parent: The parent widget.
+          dpi: The dots-per-inch resolution for the figure.
+        """
         font_manager.fontManager.addfont("Inter.ttc")
         rcParams["font.family"] = "Inter"
         rcParams["font.weight"] = "medium"
@@ -149,18 +190,35 @@ class LiveGraph(FigureCanvasQTAgg):
         # self.mpl_connect("draw_event", self.update_font_features)
 
     def sync_matplotlib_dpi(self, new_screen):
+        """Resynchronizes the figure DPI when the display screen changes.
+
+        Args:
+          new_screen: The new QScreen object representing the display.
+        """
         new_dpi = new_screen.logicalDotsPerInch()
         self.fig.set_dpi(new_dpi)
         self.draw_idle()
 
     def update_font_features(self, *args):
+        """Updates font features on all axis tick labels."""
         for label in self.ax.get_xticklabels() + self.ax.get_yticklabels():
             label.set_fontfeatures(FONT_FEATURES)
 
 
 class StatDisplay(QWidget):
+    """A widget that displays real-time game statistics in a grid layout.
+
+    Shows key game metrics (level, kills, deaths, assists, etc.) for
+    both the ally and enemy teams, with values updating as game data
+    is received from the background worker.
+    """
 
     def __init__(self, font):
+        """Initializes the statistics display with empty values.
+
+        Args:
+          font: The QFont to use for all label text.
+        """
         super().__init__()
         # self.setObjectName("StatDisplay")
         # self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
@@ -201,12 +259,31 @@ class StatDisplay(QWidget):
         self.layout.setRowStretch(len(self.stats), 1)
 
     def title(self, string):
+        """Formats a stat name string for display.
+
+        Converts underscores to spaces and capitalizes each word.
+
+        Args:
+          string: The stat name with underscores (e.g. 'item_gold').
+
+        Returns:
+            The formatted title string (e.g. 'Item Gold').
+        """
         return string.replace("_", " ").title()
 
     def get_stats(self):
         return self.stats
 
     def update_data(self, data):
+        """Updates the displayed statistics with new game data.
+
+        Parses the incoming data dictionary, splits each key into team
+        and stat components, and updates the corresponding label.
+
+        Args:
+          data: A dictionary mapping stat keys (e.g. 'ally_kills') to
+            their current values.
+        """
         for key, value in data.items():
             key = key.split("_")
             if 1 >= len(key):

@@ -1,3 +1,9 @@
+"""Connects to the League of Legends client and collects game data.
+
+This module provides the core API for communicating with the League
+of Legends client, including game state detection, score collection,
+and item gold calculation.
+"""
 from collections import defaultdict
 import http
 from enum import Enum, auto
@@ -11,7 +17,13 @@ from dragon import get_gold_value
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
+
 class GameState(Enum):
+    """Represents the current state of a League of Legends client.
+
+    States range from no client detected through various game phases
+    to game over.
+    """
     NO_CLIENT = auto()
     CLIENT_FOUND = auto()
     LOBBY = auto()
@@ -32,13 +44,29 @@ PHASE_MAPPING = {
     "EndOfGame": GameState.GAME_OVER
 }
 
+
 class GameResult(Enum):
+    """Represents the outcome of a League of Legends game."""
     WIN = auto()
     LOSE = auto()
 
+
 class GameAPI:
+    """API client for communicating with the League of Legends client.
+
+    Handles authentication, game state detection, and data collection
+    from the local League client API endpoints.
+    """
 
     def __init__(self):
+        """Initializes the API client by authenticating with the League client.
+
+        Retrieves PEM credentials from the lockfile and establishes
+        the base URL for API communication.
+
+        Raises:
+            ConnectionError: If no League Client is found.
+        """
         try:
             password, port = get_pem_port()
         except ConnectionError:
@@ -51,6 +79,14 @@ class GameAPI:
         self.pem = "riotgames.pem"
 
     def check_game_state(self):
+        """Checks the current game flow phase from the League client.
+
+        Queries the local client API to determine the current game
+        phase and maps it to a GameState enum value.
+
+        Returns:
+            The current GameState enum value.
+        """
         # Make a request to the "ActiveProcess" endpoint of the Local Client API
         url = self.url + "/lol-gameflow/v1/gameflow-phase"
 
@@ -66,6 +102,17 @@ class GameAPI:
             return GameState.UNDEFINED
 
     def get_data(self, data):
+        """Fetches live client data from the League client API.
+
+        Args:
+          data: The data endpoint to fetch (e.g. 'gamestats', 'playerlist').
+
+        Returns:
+            The parsed JSON response data.
+
+        Raises:
+            ConnectionError: If the request fails or returns a non-200 status.
+        """
         url = "https://127.0.0.1:2999/liveclientdata/" + data
 
         try:
@@ -81,6 +128,19 @@ class GameAPI:
             raise ConnectionError()
 
     def get_team(self, player=None):
+        """Determines the current player's team.
+
+        If no player name is provided, uses the active player name.
+        Otherwise, looks up the specified player's team from the
+        player list.
+
+        Args:
+          player: An optional summoner name to look up. If None, uses
+            the active player.
+
+        Returns:
+            The team name ('ORDER' or 'CHAOS') for the player.
+        """
         if player is None:
             url = "https://127.0.0.1:2999/liveclientdata/activeplayername"
 
@@ -111,6 +171,16 @@ class GameAPI:
                         return p["team"]
 
     def get_scores(self):
+        """Collects comprehensive game statistics for both teams.
+
+        Fetches game stats, player data, and event data to build a
+        complete score dictionary including levels, kills, deaths,
+        assists, objective kills, turrets, inhibitors, and game result.
+
+        Returns:
+            A defaultdict mapping stat keys (e.g. 'ally_kills') to
+            their current values.
+        """
         team = self.get_team()
         scores = defaultdict(int)
         ally_member = []
@@ -177,6 +247,15 @@ class GameAPI:
         return scores
 
     def get_item_gold(self, include_consumables=False):
+        """Calculates the total item gold for both teams.
+
+        Args:
+          include_consumables: If True, includes consumable items in
+            the gold calculation. Defaults to False.
+
+        Returns:
+            A tuple of (ally_gold, enemy_gold) integers.
+        """
         team = self.get_team()
         ally_items = []
         enemy_items = []

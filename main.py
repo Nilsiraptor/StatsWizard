@@ -1,3 +1,8 @@
+"""Launches the Stats Wizard application.
+
+This module initializes the PyQt6 application, applies global styling,
+and creates the main window with its graph and statistics display.
+"""
 import sys
 
 from PyQt6.QtWidgets import QApplication
