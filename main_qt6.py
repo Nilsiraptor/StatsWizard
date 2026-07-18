@@ -7,10 +7,18 @@ from gui import MainWindow
 
 app = QApplication(sys.argv)
 
-with open("style.css", "r") as file:
-    StyleSheet = file.read()
+app.setStyleSheet("""
+    QWidget {
+        background-color: white;
+        padding: 0px;
+        margin: 0px;
+    }
 
-app.setStyleSheet(StyleSheet)
+    QStatusBar {
+        border-top: 1px solid grey;
+        background-color: whitesmoke;
+    }
+""")
 
 window = MainWindow()
 
