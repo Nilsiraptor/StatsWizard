@@ -1,9 +1,33 @@
 from collections import defaultdict
-import requests
 import http
+from enum import Enum, auto
+
+import requests
 
 from authorization import get_pem_port, ConnectionError
 from dragon import get_gold_value
+
+
+class GameState(Enum):
+    NO_CLIENT = auto()
+    CLIENT_FOUND = auto()
+    LOBBY = auto()
+    QUEUE = auto()
+    READY_CHECK = auto()
+    CHAMP_SELECT = auto()
+    RUNNING = auto()
+    GAME_OVER = ()
+
+PHASE_MAPPING = {
+    "None": GameState.CLIENT_FOUND,
+    "Lobby": GameState.LOBBY,
+    "Matchmaking": GameState.QUEUE,
+    "ReadyCheck": GameState.READY_CHECK,
+    "ChampSelect": GameState.CHAMP_SELECT,
+    "InProgress": GameState.RUNNING,
+    "EndOfGame": GameState.GAME_OVER
+}
+
 
 class GameOver(Exception):
     def __init__(self, *args, **kwargs):
@@ -17,7 +41,7 @@ class GameOverLose(GameOver):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-class GameState:
+class GameStateAPI:
 
     def __init__(self):
         try:
@@ -178,7 +202,7 @@ class GameState:
 
 if __name__ ==  "__main__":
     try:
-        state = GameState()
+        state = GameStateAPI()
     except ConnectionError:
         print("No League Client found!")
     else:
