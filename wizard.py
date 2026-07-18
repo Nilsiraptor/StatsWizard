@@ -3,10 +3,13 @@ import http
 from enum import Enum, auto
 
 import requests
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 from authorization import get_pem_port, ConnectionError
 from dragon import get_gold_value
 
+
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class GameState(Enum):
     NO_CLIENT = auto()
@@ -52,7 +55,7 @@ class GameAPI:
         url = self.url + "/lol-gameflow/v1/gameflow-phase"
 
         try:
-            response = requests.get(url, auth=self.user, verify=self.pem)
+            response = requests.get(url, auth=self.user, verify=False)
         except requests.exceptions.ConnectionError as e:
             return GameState.NO_CLIENT
 

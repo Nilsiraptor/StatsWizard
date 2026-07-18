@@ -10,6 +10,8 @@ from matplotlib.ticker import MultipleLocator, MaxNLocator, AutoMinorLocator, Pe
 from PyQt6.QtCore import Qt
 from scipy.interpolate import Akima1DInterpolator
 
+from thread_worker import ThreadWorker
+
 # for testing
 import numpy as np
 import opensimplex
@@ -31,7 +33,7 @@ class MainWindow(QMainWindow):
         self.setFont(self.font)
 
         self.statusBar().setFont(self.font)
-        self.statusBar().showMessage("Statusbar")
+        self.statusBar().showMessage("Searching for League Client...")
 
         self.setCentralWidget(QWidget())
         self.layout = QHBoxLayout(self.centralWidget())
@@ -43,6 +45,12 @@ class MainWindow(QMainWindow):
 
         self.stats_box = StatDisplay(self.font)
         self.layout.addWidget(self.stats_box, stretch=0)
+
+        self.worker = ThreadWorker()
+        self.worker.state_changed.connect(self.change_status)
+        self.worker.data_updated.connect(self.stats_box.update_data)
+
+        self.worker.start()
 
         self.show()
         self.setMinimumSize(self.size())
@@ -73,6 +81,9 @@ class MainWindow(QMainWindow):
 
     def get_stats(self):
         return self.stats_box.get_stats()
+
+    def change_status(self, new_status):
+        self.statusBar().showMessage(str(new_status))
 
 
 class LiveGraph(FigureCanvasQTAgg):
@@ -175,3 +186,18 @@ class StatDisplay(QWidget):
 
     def get_stats(self):
         return self.stats
+
+    def update_data(self, data):
+        for key, value in data.items():
+            key = key.split("_")
+            if 1 >= len(key):
+                return
+
+            team, stat = key
+
+            labels = self.stats[stat]
+
+            if "ally" == team:
+                labels[0].setText(value)
+            elif "enemy" == team:
+                labels[2].setText(value)
