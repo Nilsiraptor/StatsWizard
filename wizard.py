@@ -16,7 +16,8 @@ class GameState(Enum):
     READY_CHECK = auto()
     CHAMP_SELECT = auto()
     RUNNING = auto()
-    GAME_OVER = ()
+    GAME_OVER = auto()
+    UNDEFINED = auto()
 
 PHASE_MAPPING = {
     "None": GameState.CLIENT_FOUND,
@@ -28,20 +29,11 @@ PHASE_MAPPING = {
     "EndOfGame": GameState.GAME_OVER
 }
 
+class GameResult(Enum):
+    WIN = auto()
+    LOSE = auto()
 
-class GameOver(Exception):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-class GameOverWin(GameOver):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-class GameOverLose(GameOver):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-class GameStateAPI:
+class GameAPI:
 
     def __init__(self):
         try:
@@ -62,13 +54,13 @@ class GameStateAPI:
         try:
             response = requests.get(url, auth=self.user, verify=self.pem)
         except requests.exceptions.ConnectionError as e:
-            raise ConnectionError()
+            return GameState.NO_CLIENT
 
         # Check if the response contains the "gameData" field, which indicates the user is in a game
         if response.status_code == 200:
-            return response.json()
+            return PHASE_MAPPING.get(response.json(), GameState.UNDEFINED)
         else:
-            raise ConnectionError()
+            return GameState.UNDEFINED
 
     def get_data(self, data):
         url = "https://127.0.0.1:2999/liveclientdata/" + data
@@ -175,9 +167,9 @@ class GameStateAPI:
                     scores["enemy_inhibs"] += 1
             elif event["EventName"] == "GameEnd":
                 if event["Result"] == "Win":
-                    raise GameOverWin()
+                    scores["result"] = GameResult.WIN
                 else:
-                    raise GameOverLose()
+                    scores["result"] = GameResult.LOSE
 
         return scores
 
@@ -202,7 +194,7 @@ class GameStateAPI:
 
 if __name__ ==  "__main__":
     try:
-        state = GameStateAPI()
+        state = GameAPI()
     except ConnectionError:
         print("No League Client found!")
     else:
