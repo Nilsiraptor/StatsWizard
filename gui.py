@@ -11,6 +11,7 @@ from PyQt6.QtCore import Qt
 from scipy.interpolate import Akima1DInterpolator
 
 from thread_worker import ThreadWorker
+from wizard import GameState
 
 # for testing
 import numpy as np
@@ -83,7 +84,25 @@ class MainWindow(QMainWindow):
         return self.stats_box.get_stats()
 
     def change_status(self, new_status):
-        self.statusBar().showMessage(str(new_status))
+        match new_status:
+            case GameState.NO_CLIENT:
+                self.statusBar().showMessage("Suche den League Client...")
+            case GameState.CLIENT_FOUND:
+                self.statusBar().showMessage("League Client gefunden")
+            case GameState.LOBBY:
+                self.statusBar().showMessage("Lobby erkannt - Warte auf Spielstart...")
+            case GameState.QUEUE:
+                self.statusBar().showMessage("Queue erkannt - Warte auf Spielstart...")
+            case GameState.READY_CHECK:
+                self.statusBar().showMessage("Queue erkannt - Spiel gefunden - Bitte annehmen")
+            case GameState.CHAMP_SELECT:
+                self.statusBar().showMessage("Champion-Auswahl erkannt - Warte auf Spielstart...")
+            case GameState.RUNNING:
+                self.statusBar().showMessage("Laufendes Spiel erkannt")
+            case GameState.GAME_OVER:
+                self.statusBar().showMessage("Spiel beendet - Warte auf neues Spiel...")
+            case _:
+                self.statusBar().showMessage(f"Unbekannter Spiel-Status: {new_status}")
 
 
 class LiveGraph(FigureCanvasQTAgg):
