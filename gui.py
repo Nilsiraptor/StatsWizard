@@ -294,6 +294,6 @@ class StatDisplay(QWidget):
             labels = self.stats[stat]
 
             if "ally" == team:
-                labels[0].setText(value)
+                labels[0].setText(str(value))
             elif "enemy" == team:
-                labels[2].setText(value)
+                labels[2].setText(str(value))

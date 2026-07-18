@@ -116,7 +116,7 @@ class GameAPI:
         url = "https://127.0.0.1:2999/liveclientdata/" + data
 
         try:
-            response = requests.get(url, verify=self.pem)
+            response = requests.get(url, verify=False)
         except requests.exceptions.ConnectionError as e:
             raise ConnectionError()
         except http.client.RemoteDisconnected as e:
@@ -145,7 +145,7 @@ class GameAPI:
             url = "https://127.0.0.1:2999/liveclientdata/activeplayername"
 
             try:
-                response = requests.get(url, verify=self.pem)
+                response = requests.get(url, verify=False)
             except requests.exceptions.ConnectionError as e:
                 raise ConnectionError()
             else:
@@ -159,7 +159,7 @@ class GameAPI:
         url = "https://127.0.0.1:2999/liveclientdata/playerlist"
 
         try:
-            response = requests.get(url, verify=self.pem)
+            response = requests.get(url, verify=False)
         except requests.exceptions.ConnectionError as e:
             raise ConnectionError
         else:
