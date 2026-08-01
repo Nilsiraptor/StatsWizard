@@ -3,10 +3,29 @@ import psutil
 
 
 class ConnectionError(Exception):
+    """Exception raised when a connection to the League of Legends client fails."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+
 def get_pem_port(process_name='LeagueClientUx.exe'):
+    """Retrieves the PEM port and password from the League client lockfile.
+
+    Scans running processes for the League of Legends client, reads its
+    lockfile, and returns the PEM authentication credentials.
+
+    Args:
+        process_name: The name of the League client process to search for.
+            Defaults to 'LeagueClientUx.exe'.
+
+    Returns:
+        A tuple of (password, port) strings extracted from the lockfile.
+
+    Raises:
+        ConnectionError: If the League client process is not found, the
+            lockfile does not exist, or the lockfile data is invalid.
+    """
 
     # Find the process
     process = None
