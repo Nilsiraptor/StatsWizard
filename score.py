@@ -8,7 +8,7 @@ import pandas as pd
 import time
 import os
 
-from wizard import GameState, GameOverWin, GameOverLose
+from wizard import GameAPI, GameState, GameResult
 from authorization import ConnectionError
 
 
@@ -25,7 +25,7 @@ def main():
     while True:
         if wizard is None:
             try:
-                wizard = GameState()
+                wizard = GameAPI()
             except ConnectionError:
                 time.sleep(1)
                 continue
@@ -37,7 +37,7 @@ def main():
                 time.sleep(1)
                 continue
 
-            if state == "InProgress":
+            if state == GameState.RUNNING:
                 if df is None:
                     df = pd.DataFrame()
                     print("Game in progress. Starting data collection...")
@@ -51,22 +51,24 @@ def main():
                         wizard = None
                         time.sleep(1)
                         continue
-                    except GameOverWin:
-                        print("Game over. You won!")
-                        try:
-                            df.insert(len(df.columns), "result", "WIN")
-                        except ValueError:
-                            pass
-                        time.sleep(1)
-                        continue
-                    except GameOverLose:
-                        print("Game over. You lost!")
-                        try:
-                            df.insert(len(df.columns), "result", "LOSE")
-                        except ValueError:
-                            pass
-                        time.sleep(1)
-                        continue
+
+                    if "result" in scores:
+                        if GameResult.WIN == scores["result"]:
+                            print("Game over. You won!")
+                            try:
+                                df.insert(len(df.columns), "result", "WIN")
+                            except ValueError:
+                                pass
+                            time.sleep(1)
+                            continue
+                        if GameResult.LOSE == scores["result"]:
+                            print("Game over. You lost!")
+                            try:
+                                df.insert(len(df.columns), "result", "LOSE")
+                            except ValueError:
+                                pass
+                            time.sleep(1)
+                            continue
 
                     new_row = pd.DataFrame([scores])
 
