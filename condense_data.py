@@ -45,9 +45,12 @@ def parse_game_id(filename):
 # We pass `dtype=str` to keep all columns as strings (safer for mixed data).
 # tqdm wraps the loop to show a progress bar with estimated time remaining.
 all_dataframes = []
+games_combined = 0
 for csv_file in tqdm(csv_files, desc="Loading game files", unit="file"):
     df = pd.read_csv(csv_file, index_col=0)
     if not "result" in df.columns: continue
+    if True in ["NONE" in label for label in df.columns]: continue
+    games_combined += 1
 
     # Drop duplicate datapoints
     df = df.drop_duplicates()
@@ -73,5 +76,6 @@ combined_df.to_csv(output_path, index=False)
 
 # Print a summary of what was done.
 print(f"Loaded {len(csv_files)} game files.")
+print(f"Used Data from {games_combined} games.")
 print(f"Combined rows: {len(combined_df)}")
 print(f"Output saved to: {output_path}")
