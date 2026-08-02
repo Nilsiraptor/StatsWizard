@@ -11,16 +11,20 @@ This script:
   4. Saves the result to a new CSV file
 """
 
-import os
-import glob
-import pandas as pd
 from datetime import datetime
+from pathlib import Path
+
+import pandas as pd
 from tqdm import tqdm
+
 
 # Step 1: Define the input directory containing all the game CSV files.
 # We use a glob pattern to match any file ending in .csv inside the folder.
-input_folder = os.path.join(os.path.dirname(__file__), "GameData", "CLASSIC")
-csv_files = glob.glob(os.path.join(input_folder, "*.csv"))
+base_path = Path(__file__).parent
+input_folder = base_path / "GameData"
+mode_path = input_folder / "CLASSIC"
+
+csv_files = list(mode_path.glob("*.csv"))
 
 # Step 2: Sort the file list so files are processed in chronological order.
 # The filenames follow the pattern YYYY-MM-DD_HH-MM-SS.csv, so lexicographic
@@ -33,12 +37,9 @@ csv_files.sort()
 # to distinguish between different games in the combined dataset.
 def parse_game_id(filename):
     # Strip the .csv extension and split on the underscore separator.
-    base = os.path.splitext(filename)[0]  # e.g. "2023-04-15_01-18-16"
-    parts = base.split("_")
-    # Rejoin the parts with no separator to form a single integer.
-    parts[1] = ":".join(parts[1].split("-"))
-    timestamp_str = " ".join(parts)
-    return int(datetime.fromisoformat(timestamp_str).timestamp())
+    base = Path(filename).stem  # e.g. "2023-04-15_01-18-16"
+    time_str = base.replace("_", ":")
+    return int(datetime.fromisoformat(time_str).timestamp())
 
 # Step 4: Load all CSV files into a single pandas DataFrame.
 # read_csv handles parsing, type inference, and missing values automatically.
@@ -58,7 +59,7 @@ for csv_file in tqdm(csv_files, desc="Loading game files", unit="file"):
     df = df.sort_values("gameTime").drop_duplicates(subset=cols)
 
     # Add the game ID column so each row knows which game it belongs to.
-    game_id = parse_game_id(os.path.basename(csv_file))
+    game_id = parse_game_id(csv_file)
     df["game_id"] = game_id
     all_dataframes.append(df)
 
@@ -70,8 +71,7 @@ combined_df = combined_df.sort_index(axis=1)
 
 # Step 7: Save the cleaned combined data to a new CSV file.
 # This replaces the commented-out save from the first version.
-output_path = os.path.join(os.path.dirname(__file__),
-                           "GameData", "CLASSIC.csv")
+output_path = (input_folder / mode_path.stem).with_suffix(".csv")
 combined_df.to_csv(output_path, index=False)
 
 # Print a summary of what was done.

@@ -6,7 +6,8 @@ and saves them as CSV files organized by game mode.
 """
 import pandas as pd
 import time
-import os
+from datetime import datetime
+from pathlib import Path
 
 from wizard import GameAPI, GameState, GameResult
 from authorization import ConnectionError
@@ -59,7 +60,7 @@ def main():
                                 df.insert(len(df.columns), "result", "WIN")
                             except ValueError:
                                 pass
-                            time.sleep(1)
+                            time.sleep(5)
                             continue
                         if GameResult.LOSE == scores["result"]:
                             print("Game over. You lost!")
@@ -67,7 +68,7 @@ def main():
                                 df.insert(len(df.columns), "result", "LOSE")
                             except ValueError:
                                 pass
-                            time.sleep(1)
+                            time.sleep(5)
                             continue
 
                     new_row = pd.DataFrame([scores])
@@ -79,10 +80,14 @@ def main():
             else:
                 if df is not None:
                     mode = df["gameMode"][0]
+                    mode_path = Path("GameData") / mode
+                    file_name = datetime.now().replace(microsecond=0).isoformat()
+                    file_name = file_name.replace(":", "_")
+                    csv_path = (mode_path / file_name).with_suffix(".csv")
                     try:
-                        df.to_csv(f"GameData\\{mode}\\{time.strftime(r'%Y-%m-%d_%H-%M-%S')}.csv", na_rep="0")
+                        df.to_csv(csv_path, na_rep="0")
                     except OSError as e:
-                        os.makedirs(f"GameData\\{mode}", exist_ok=True)
+                        mode_path.mkdir(parents=True, exist_ok=True)
                     else:
                         df = None
                         print("Data saved!")
