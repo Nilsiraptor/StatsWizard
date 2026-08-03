@@ -70,12 +70,12 @@ for mode_file in input_folder.glob("*.csv"):
     study = optuna.create_study(direction="maximize")
     study.optimize(
         objective,
-        timeout=120,
+        n_trials=1000,
         n_jobs=-1,
-        # show_progress_bar=True
+        show_progress_bar=True
     )
 
-    print(f"{len(study.trials)} were performed")
+    print(f"{len(study.trials)} Trials were performed")
     print(*[": ".join(map(str, param)) for param in study.best_params.items()], sep="\n")
 
     # Training model with optimal hyperparameters

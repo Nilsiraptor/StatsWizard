@@ -13,6 +13,9 @@ matplotlib==3.11.0
 # Machine learning and statistical modeling
 scikit-learn==1.9.0
 
+# Hyperparameters optimization
+optuna==4.9.0
+
 # Numerical computing
 numpy==2.5.1
 
