@@ -2,6 +2,7 @@ from pathlib import Path
 from time import perf_counter as time
 
 import pandas as pd
+import numpy as np
 from sklearn.model_selection import GroupShuffleSplit, cross_val_score
 from sklearn.preprocessing import MaxAbsScaler
 from sklearn.pipeline import make_pipeline
@@ -30,7 +31,7 @@ for mode_file in input_folder.glob("*.csv"):
     df[target] = df[target].map({"WIN": 1, "LOSE": 0})
     print(mode, df[target].unique())
 
-    gss = GroupShuffleSplit(n_splits=10) # Number of split for each model
+    gss = GroupShuffleSplit(n_splits=11) # Number of split for each model
 
     X = df[features]
     y = df[target]
@@ -64,13 +65,17 @@ for mode_file in input_folder.glob("*.csv"):
             n_jobs=-1
         )
 
-        return scores.mean()
+        return scores.mean() - score.std()
 
     optuna.logging.set_verbosity(optuna.logging.WARNING)
-    study = optuna.create_study(direction="maximize")
+    study = optuna.create_study(
+        study_name=mode,
+        direction="maximize",
+    )
+
     study.optimize(
         objective,
-        n_trials=1000,
+        n_trials=500,
         n_jobs=-1,
         show_progress_bar=True
     )
