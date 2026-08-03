@@ -1,17 +1,17 @@
 from pathlib import Path
-from collections import defaultdict
 from time import perf_counter as time
 
 import pandas as pd
-from sklearn.model_selection import GroupShuffleSplit, RandomizedSearchCV
+from sklearn.model_selection import GroupShuffleSplit, cross_val_score
 from sklearn.preprocessing import MaxAbsScaler
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.calibration import CalibratedClassifierCV
-from sklearn.metrics import make_scorer, log_loss, brier_score_loss
+from sklearn.metrics import make_scorer, log_loss
 from scipy.stats import uniform, loguniform
-import joblib as jl
+import joblib
+import optuna
 
 
 input_folder = Path("GameData")
@@ -36,75 +36,65 @@ for mode_file in input_folder.glob("*.csv"):
     y = df[target]
     groups = df["game_id"]
 
-    model = LogisticRegression(
-        C=1.0,
-        l1_ratio=0.2,
-        class_weight="balanced",
-        solver="saga",
-        max_iter=2000
-    )
+    def objective(trial):
+        c = trial.suggest_float("C", 0.01, 0.1, log=True)
+        l1 = trial.suggest_float("l1_ratio", 0.0, 1.0)
 
-    pipeline = make_pipeline(MaxAbsScaler(), model)
+        model = LogisticRegression(
+                C=c,
+                l1_ratio=l1,
+            class_weight="balanced",
+            solver="saga",
+            max_iter=2000
+        )
 
-    params = {
-        "logisticregression__C": loguniform(0.01, 2.0),
-        "logisticregression__l1_ratio": uniform(0.2, 0.7)
-    }
+        pipeline = make_pipeline(MaxAbsScaler(), model)
 
-    scorers = {
-        "neg_log_loss": make_scorer(
+        scorer = make_scorer(
             log_loss,
             response_method="predict_proba",
             greater_is_better=False,
             labels=[0, 1]
-        ),
-        "neg_brier_score": make_scorer(
-            brier_score_loss,
-            response_method="predict_proba",
-            greater_is_better=False,
-            labels=[0, 1]
         )
-    }
 
-    search = RandomizedSearchCV(
-        pipeline,
-        param_distributions=params,
-        n_iter=100, # Number different hyperparameters to test
-        cv=gss,
-        scoring=scorers,
+        scores = cross_val_score(
+            pipeline, X, y,
+            groups=groups, cv=gss,
+            scoring=scorer,
+            n_jobs=-1
+        )
+
+        return scores.mean()
+
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+    study = optuna.create_study(direction="maximize")
+    study.optimize(
+        objective,
+        timeout=120,
         n_jobs=-1,
-        refit="neg_log_loss",
-        verbose=1
+        # show_progress_bar=True
     )
 
-    search.fit(X, y, groups=groups)
+    print(f"{len(study.trials)} were performed")
+    print(*[": ".join(map(str, param)) for param in study.best_params.items()], sep="\n")
 
-    # 1. Convert to DataFrame
-    results_df = pd.DataFrame(search.cv_results_)
+    # Training model with optimal hyperparameters
+    final_model = LogisticRegression(
+        **study.best_params,
+        class_weight="balanced",
+        solver="saga",
+        max_iter=10_000
+    )
 
-    # 2. Select the most relevant columns for a clean view
-    # We look at the parameters, the score, and how it ranked
-    param_cols = [col for col in results_df.columns if col.startswith('param_')]
+    final_pipeline = make_pipeline(MaxAbsScaler(), final_model)
 
-    # Combine them with the score columns for a clean table
-    cols_to_show = param_cols + [
-        'mean_test_neg_log_loss',
-        'mean_test_neg_brier_score',
-        'rank_test_neg_log_loss',
-        'rank_test_neg_brier_score'
-    ]
-
-    # 3. Sort by rank and display
-    results_clean = results_df[cols_to_show].set_index('rank_test_neg_log_loss').sort_index()
-
-    # Display the top 5 models
-    print(results_clean.head(10))
-
-    print(f"This took {time()-t:.3} seconds")
-    print("_"*60, "\n")
+    final_pipeline.fit(X, y)
 
     # Save model
     model_file = (Path("models") / mode).with_suffix(".joblib")
     model_file.parent.mkdir(parents=True, exist_ok=True)
 
-    jl.dump(search.best_estimator_, model_file)
+    joblib.dump(final_pipeline, model_file)
+
+    print(f"This took {time()-t:.2f} seconds")
+    print("_"*60, "\n")
