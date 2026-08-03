@@ -18,3 +18,6 @@ numpy==2.5.1
 
 # Graphical User Interface
 PyQt6==6.11.0
+
+# Progressbar
+tqdm==4.70.0
