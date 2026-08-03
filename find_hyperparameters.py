@@ -9,6 +9,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.calibration import CalibratedClassifierCV
+from sklearn.metrics import make_scorer, log_loss, brier_score_loss
 from scipy.stats import uniform, loguniform
 import joblib as jl
 
@@ -22,15 +23,12 @@ for mode_file in input_folder.glob("*.csv"):
 
     df = pd.read_csv(mode_file)
 
-    print(mode)
-    print(*df.columns)
-
     target = "result"
     features = df.columns.drop(["result", "gameMode", "gameTime", "game_id"])
 
     df = df.fillna(0)
     df[target] = df[target].map({"WIN": 1, "LOSE": 0})
-    print(df[target].unique())
+    print(mode, df[target].unique())
 
     gss = GroupShuffleSplit(n_splits=10) # Number of split for each model
 
@@ -53,12 +51,27 @@ for mode_file in input_folder.glob("*.csv"):
         "logisticregression__l1_ratio": uniform(0.2, 0.7)
     }
 
+    scorers = {
+        "neg_log_loss": make_scorer(
+            log_loss,
+            response_method="predict_proba",
+            greater_is_better=False,
+            labels=[0, 1]
+        ),
+        "neg_brier_score": make_scorer(
+            brier_score_loss,
+            response_method="predict_proba",
+            greater_is_better=False,
+            labels=[0, 1]
+        )
+    }
+
     search = RandomizedSearchCV(
         pipeline,
         param_distributions=params,
-        n_iter=30, # Number different hyperparameters to test
+        n_iter=100, # Number different hyperparameters to test
         cv=gss,
-        scoring=["neg_log_loss", "neg_brier_score"],
+        scoring=scorers,
         n_jobs=-1,
         refit="neg_log_loss",
         verbose=1
@@ -85,15 +98,13 @@ for mode_file in input_folder.glob("*.csv"):
     results_clean = results_df[cols_to_show].set_index('rank_test_neg_log_loss').sort_index()
 
     # Display the top 5 models
-    print(results_clean.head(20))
+    print(results_clean.head(10))
 
     print(f"This took {time()-t:.3} seconds")
+    print("_"*60, "\n")
 
     # Save model
     model_file = (Path("models") / mode).with_suffix(".joblib")
     model_file.parent.mkdir(parents=True, exist_ok=True)
 
     jl.dump(search.best_estimator_, model_file)
-
-
-    break
