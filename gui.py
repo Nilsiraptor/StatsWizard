@@ -14,14 +14,12 @@ from matplotlib.figure import Figure
 from matplotlib import font_manager, rcParams
 from matplotlib.ticker import MultipleLocator, MaxNLocator, AutoMinorLocator, PercentFormatter
 from PyQt6.QtCore import Qt
+import numpy as np
 from scipy.interpolate import Akima1DInterpolator
 
 from thread_worker import ThreadWorker
 from wizard import GameState
 
-# for testing
-import numpy as np
-import opensimplex
 
 FONT_SIZE = 12
 FONT_FEATURES = ["calt", "tnum", "dlig",
@@ -164,10 +162,9 @@ class LiveGraph(FigureCanvasQTAgg):
 
         # show example curve
         x = np.linspace(-120, 0, 121, True)
-        y = opensimplex.OpenSimplex(np.random.randint(0, 1024)).noise2array(np.array([1]), x/50)
-        y[0:20] = np.zeros(20).reshape(-1, 1)
+        y = 0.5 * np.ones(x.shape)
 
-        interp = Akima1DInterpolator(x, 50*y+50, method="makima")
+        interp = Akima1DInterpolator(x, 100*y, method="makima")
         show_x = np.linspace(-120, 0, 1001, True)
 
         self.line = self.ax.plot(show_x, interp(show_x), c="darkorchid")
