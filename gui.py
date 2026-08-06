@@ -162,8 +162,7 @@ class LiveGraph(FigureCanvasQTAgg):
         self.setParent(parent)
 
         # show example curve
-        self.x = np.linspace(2, 122, 121, True)
-        self.y = 0.5 * np.ones(self.x.shape)
+        self.reset_line()
 
         show_x, show_y = self.interpolate()
 
@@ -186,7 +185,14 @@ class LiveGraph(FigureCanvasQTAgg):
         self.update_font_features()
         # self.mpl_connect("draw_event", self.update_font_features)
 
+    def reset_line(self):
+        self.x = np.linspace(-120, 0, 121, True)
+        self.y = 0.5 * np.ones(self.x.shape)
+
     def update_line(self, gameTime, win_prob):
+        if gameTime < self.x[-1]:
+            self.reset_line()
+
         self.x[:-1] = self.x[1:]
         self.x[-1] = gameTime
 
@@ -199,9 +205,12 @@ class LiveGraph(FigureCanvasQTAgg):
         self.draw_idle()
 
     def interpolate(self):
-        interp = Akima1DInterpolator(self.x - self.x[-1], 100*self.y, method="makima")
-        show_x = np.linspace(-120, 0, 1001, True)
-        return show_x, interp(show_x)
+        try:
+            interp = Akima1DInterpolator(self.x - self.x[-1], 100*self.y, method="makima")
+            show_x = np.linspace(-120, 0, 1001, True)
+            return show_x, interp(show_x)
+        except ValueError:
+            return self.x - self.x[-1], 100*self.y
 
     def sync_matplotlib_dpi(self, new_screen):
         """Resynchronizes the figure DPI when the display screen changes.
@@ -240,7 +249,12 @@ class StatDisplay(QWidget):
         self.layout = QGridLayout()
         self.setLayout(self.layout)
 
-        self.stat_names = ["level", "kills", "deaths", "assists", "minions", "wards", "item_gold", "turrets", "inhibs", "heralds", "dragons", "barons", "aces"]
+        self.stat_names = ["level", "kills", "deaths", "assists", "creepScore", "wardScore", "item_gold", "turrets", "inhibs", "heralds", "dragons", "barons", "aces"]
+        stat_display_name = {
+            "creepScore": "Minions",
+            "wardScore": "Wards",
+            "item_gold": "Item Gold"
+        }
 
         self.stats = {}
         for r, stat in enumerate(self.stat_names):
@@ -253,7 +267,7 @@ class StatDisplay(QWidget):
             self.layout.addWidget(blue_text, r, 2)
 
             red_text.setText("0")
-            name_text.setText(self.title(stat))
+            name_text.setText(stat_display_name.get(stat, self.title(stat)))
             blue_text.setText("0")
 
             red_text.setAlignment(Qt.AlignmentFlag.AlignRight)
@@ -298,7 +312,7 @@ class StatDisplay(QWidget):
           data: A dictionary mapping stat keys (e.g. 'ally_kills') to
             their current values.
         """
-        for key, labels in self.stats.items:
+        for key, labels in self.stats.items():
             ally_keys = [s for s in data.keys() if "ally" in s and key in s]
             ally_score = sum([data.get(k, 0) for k in ally_keys])
 

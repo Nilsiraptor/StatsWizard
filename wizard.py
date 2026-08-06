@@ -226,7 +226,7 @@ class GameAPI:
             elif event["EventName"] == "TurretKilled":
                 structure = event["TurretKilled"].split("_")[1]
 
-                if structure == "T2" and team == "ORDER" or structure == "T1" and team == "CHAOS":
+                if structure == "T2" and team == "ORDER" or structure == "T1" and team == "CHAOS" or team in event["TurretKilled"]:
                     scores["ally_turrets"] += 1
                 else:
                     scores["enemy_turrets"] += 1
@@ -234,7 +234,7 @@ class GameAPI:
             elif event["EventName"] == "InhibKilled":
                 structure = event["InhibKilled"].split("_")[1]
 
-                if structure == "T2" and team == "ORDER" or structure == "T1" and team == "CHAOS":
+                if structure == "T2" and team == "ORDER" or structure == "T1" and team == "CHAOS" or team in event["InhibKilled"]:
                     scores["ally_inhibs"] += 1
                 else:
                     scores["enemy_inhibs"] += 1

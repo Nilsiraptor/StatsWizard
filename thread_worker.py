@@ -10,6 +10,7 @@ from pathlib import Path
 
 from PyQt6.QtCore import QThread, pyqtSignal
 import joblib
+import pandas as pd
 
 from wizard import GameState, GameAPI
 from authorization import ConnectionError
@@ -52,11 +53,11 @@ class ThreadWorker(QThread):
 
         self.models = ModelCache()
 
-    def predict_win_probability(scores):
+    def predict_win_probability(self, scores):
         pipeline = self.models.get(scores["gameMode"])
 
         X = pd.DataFrame([scores])
-        X.reindex(columns = pipeline.feature_names_in_, fill_value=0)
+        X = X.reindex(columns = pipeline.feature_names_in_, fill_value=0)
 
         proba = pipeline.predict_proba(X)[0]
         classes = list(pipeline.classes_)
@@ -96,8 +97,8 @@ class ThreadWorker(QThread):
                     if self.running: continue
 
                 try:
-                    win_prob = self.predict_win_probability(scores)
-                    self.prediction_updated.emit(scores["gameTime"], float(win_prob))
+                    win_prob = self.predict_win_probability(live_scores)
+                    self.prediction_updated.emit(live_scores["gameTime"], float(win_prob))
                 except (FileNotFoundError, KeyError) as e:
                     print(e)
 
