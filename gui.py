@@ -60,6 +60,7 @@ class MainWindow(QMainWindow):
         self.worker = ThreadWorker()
         self.worker.state_changed.connect(self.change_status)
         self.worker.data_updated.connect(self.stats_box.update_data)
+        self.worker.prediction_updated.connect(self.graph.update_line)
 
         self.worker.start()
 
@@ -161,13 +162,12 @@ class LiveGraph(FigureCanvasQTAgg):
         self.setParent(parent)
 
         # show example curve
-        x = np.linspace(-120, 0, 121, True)
-        y = 0.5 * np.ones(x.shape)
+        self.x = np.linspace(2, 122, 121, True)
+        self.y = 0.5 * np.ones(self.x.shape)
 
-        interp = Akima1DInterpolator(x, 100*y, method="makima")
-        show_x = np.linspace(-120, 0, 1001, True)
+        show_x, show_y = self.interpolate()
 
-        self.line = self.ax.plot(show_x, interp(show_x), c="darkorchid")
+        self.line = self.ax.plot(show_x, show_y, c="darkorchid")
 
         # Setting up Axis
         self.ax.grid()
@@ -185,6 +185,23 @@ class LiveGraph(FigureCanvasQTAgg):
 
         self.update_font_features()
         # self.mpl_connect("draw_event", self.update_font_features)
+
+    def update_line(self, gameTime, win_prob):
+        self.x[:-1] = self.x[1:]
+        self.x[-1] = gameTime
+
+        self.y[:-1] = self.y[1:]
+        self.y[-1] = win_prob
+
+        show_x, show_y = self.interpolate()
+
+        self.line[0].set_data(show_x, show_y)
+        self.draw_idle()
+
+    def interpolate(self):
+        interp = Akima1DInterpolator(self.x - self.x[-1], 100*self.y, method="makima")
+        show_x = np.linspace(-120, 0, 1001, True)
+        return show_x, interp(show_x)
 
     def sync_matplotlib_dpi(self, new_screen):
         """Resynchronizes the figure DPI when the display screen changes.

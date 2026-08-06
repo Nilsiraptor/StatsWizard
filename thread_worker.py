@@ -6,11 +6,25 @@ score data while a game is in progress.
 """
 from time import perf_counter as time
 from time import sleep
+from pathlib import Path
 
 from PyQt6.QtCore import QThread, pyqtSignal
+import joblib
 
 from wizard import GameState, GameAPI
 from authorization import ConnectionError
+
+
+class ModelCache:
+    def __init__(self, models_dir="models"):
+        self.dir = Path(models_dir)
+        self.cache = {}
+
+    def get(self, mode):
+        if mode not in self.cache:
+            model_path = (self.dir / mode).with_suffix(".joblib")
+            self.cache[mode] = joblib.load(model_path)
+        return self.cache[mode]
 
 
 class ThreadWorker(QThread):
@@ -22,6 +36,7 @@ class ThreadWorker(QThread):
 
     state_changed = pyqtSignal(GameState)
     data_updated = pyqtSignal(dict)
+    prediction_updated = pyqtSignal(float, float)
 
     def __init__(self, freq=1.0):
         """Initializes the thread worker.
@@ -34,6 +49,18 @@ class ThreadWorker(QThread):
         self.running = True
 
         self.pause = 1.0 / freq
+
+        self.models = ModelCache()
+
+    def predict_win_probability(scores):
+        pipeline = self.models.get(scores["gameMode"])
+
+        X = pd.DataFrame([scores])
+        X.reindex(columns = pipeline.feature_names_in_, fill_value=0)
+
+        proba = pipeline.predict_proba(X)[0]
+        classes = list(pipeline.classes_)
+        return proba[classes.index(1)]
 
     def run(self):
         """The main loop that polls for game state and collects data."""
@@ -67,6 +94,12 @@ class ThreadWorker(QThread):
 
                 if "result" in live_scores:
                     if self.running: continue
+
+                try:
+                    win_prob = self.predict_win_probability(scores)
+                    self.prediction_updated.emit(scores["gameTime"], float(win_prob))
+                except (FileNotFoundError, KeyError) as e:
+                    print(e)
 
                 gold = self.api.get_item_gold()
 
