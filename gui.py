@@ -298,16 +298,12 @@ class StatDisplay(QWidget):
           data: A dictionary mapping stat keys (e.g. 'ally_kills') to
             their current values.
         """
-        for key, value in data.items():
-            key = key.split("_")
-            if 1 >= len(key):
-                return
+        for key, labels in self.stats.items:
+            ally_keys = [s for s in data.keys() if "ally" in s and key in s]
+            ally_score = sum([data.get(k, 0) for k in ally_keys])
 
-            team, stat = key
+            enemy_keys = [s for s in data.keys() if "enemy" in s and key in s]
+            enemy_score = sum([data.get(k, 0) for k in enemy_keys])
 
-            labels = self.stats[stat]
-
-            if "ally" == team:
-                labels[0].setText(str(value))
-            elif "enemy" == team:
-                labels[2].setText(str(value))
+            labels[0].setText(str(ally_score))
+            labels[2].setText(str(enemy_score))
