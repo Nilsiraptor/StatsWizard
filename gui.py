@@ -319,5 +319,5 @@ class StatDisplay(QWidget):
             enemy_keys = [s for s in data.keys() if "enemy" in s and key in s]
             enemy_score = sum([data.get(k, 0) for k in enemy_keys])
 
-            labels[0].setText(str(ally_score))
-            labels[2].setText(str(enemy_score))
+            labels[0].setText(str(int(ally_score)))
+            labels[2].setText(str(int(enemy_score)))
