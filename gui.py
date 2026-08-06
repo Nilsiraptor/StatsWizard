@@ -249,7 +249,7 @@ class StatDisplay(QWidget):
         self.layout = QGridLayout()
         self.setLayout(self.layout)
 
-        self.stat_names = ["level", "kills", "deaths", "assists", "creepScore", "wardScore", "item_gold", "turrets", "inhibs", "heralds", "dragons", "barons", "aces"]
+        self.stat_names = ["level", "kills", "deaths", "assists", "creepScore", "wardScore", "gold", "turrets", "inhibs", "heralds", "dragons", "barons", "aces"]
         stat_display_name = {
             "creepScore": "Minions",
             "wardScore": "Wards",

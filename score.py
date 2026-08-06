@@ -44,7 +44,7 @@ def main():
                     print("Game in progress. Starting data collection...")
                     t = time.time()
 
-                if time.time() - t >= 8:
+                if time.time() - t >= 10:
 
                     try:
                         scores = wizard.get_scores()
@@ -75,7 +75,7 @@ def main():
 
                     df = pd.concat([df, new_row], ignore_index=True)
 
-                    time.sleep(0.1)
+                    time.sleep(1)
 
             else:
                 if df is not None:

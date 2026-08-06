@@ -224,17 +224,17 @@ class GameAPI:
                     scores["enemy_aces"] += 1
 
             elif event["EventName"] == "TurretKilled":
-                structure = event["TurretKilled"].split("_")[1]
+                structure = event["TurretKilled"]
 
-                if structure == "T2" and team == "ORDER" or structure == "T1" and team == "CHAOS" or team.title() not in event["TurretKilled"]:
+                if self.get_team_from_structure(structure) == team:
                     scores["ally_turrets"] += 1
                 else:
                     scores["enemy_turrets"] += 1
 
             elif event["EventName"] == "InhibKilled":
-                structure = event["InhibKilled"].split("_")[1]
+                structure = event["InhibKilled"]
 
-                if structure == "T2" and team == "ORDER" or structure == "T1" and team == "CHAOS" or team.title() not in event["InhibKilled"]:
+                if self.get_team_from_structure(structure) == team:
                     scores["ally_inhibs"] += 1
                 else:
                     scores["enemy_inhibs"] += 1
@@ -245,6 +245,20 @@ class GameAPI:
                     scores["result"] = GameResult.LOSE
 
         return scores
+
+    def get_team_from_structure(self, identifier):
+        token = identifier.split("_")[1]
+
+        if "Chaos" in token:
+            return "ORDER"
+        if "Order" in token:
+            return "CHAOS"
+        if "T1" == token:
+            return "CHAOS"
+        if "T2" == token:
+            return "ORDER"
+
+        raise ValueError(f"Unrecognized Structure Identifier: {identifier!r}")
 
     def get_item_gold(self, include_consumables=False):
         """Calculates the total item gold for both teams.
