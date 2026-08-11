@@ -110,11 +110,10 @@ for mode_file in input_folder.glob("*.csv"):
 
             model = RandomForestClassifier(
                 n_estimators=trees,
-                max_depth=None,
-                # min_samples_split=samples_split,
                 min_samples_leaf=samples_leaf,
                 max_features=max_features,
-                n_jobs=-1,
+                max_depth=None,
+                n_jobs=1,
                 class_weight="balanced",
                 monotonic_cst=build_monotonic_cst(features)
             )
@@ -141,7 +140,7 @@ for mode_file in input_folder.glob("*.csv"):
                 learning_rate=lr,
                 max_iter=trees,
                 max_depth=depth,
-                max_leaf_nodes=None,
+                max_leaf_nodes=leaf_nodes,
                 min_samples_leaf=samples_leaf,
                 l2_regularization=l2,
                 early_stopping=True,
@@ -180,7 +179,7 @@ for mode_file in input_folder.glob("*.csv"):
     study.optimize(
         objective,
         n_trials=100,
-        n_jobs=-1,
+        n_jobs=1,
         show_progress_bar=True
     )
 
@@ -198,7 +197,10 @@ for mode_file in input_folder.glob("*.csv"):
             max_iter=10_000
         )
 
-        final_pipeline = make_pipeline(MaxAbsScaler(), final_model)
+        final_pipeline = make_pipeline(RobustScaler(
+            with_centering=False,
+            quantile_range=(0, 50)
+        ), final_model)
 
         final_pipeline.fit(X, y)
 
@@ -206,13 +208,14 @@ for mode_file in input_folder.glob("*.csv"):
         final_model = RandomForestClassifier(
             **optimum,
             max_depth=None,
-            n_jobs=-1,
+            n_jobs=1,
             class_weight="balanced",
             monotonic_cst=build_monotonic_cst(features)
         )
 
         calibrated_model = CalibratedClassifierCV(
             estimator=final_model,
+            n_jobs=-1,
             method="isotonic",
             cv=gss
         )
@@ -229,8 +232,6 @@ for mode_file in input_folder.glob("*.csv"):
 
         final_model = HistGradientBoostingClassifier(
             **optimum,
-            n_jobs=-1,
-            max_leaf_nodes=None,
             early_stopping=True,
             validation_fraction=0.1,
             class_weight="balanced",
@@ -239,6 +240,7 @@ for mode_file in input_folder.glob("*.csv"):
 
         calibrated_model = CalibratedClassifierCV(
             estimator=final_model,
+            n_jobs=-1,
             method="isotonic",
             cv=gss
         )
