@@ -3,7 +3,7 @@ from time import perf_counter as time
 
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import GroupShuffleSplit, cross_val_score
+from sklearn.model_selection import GroupShuffleSplit, GroupKFold, cross_val_score
 from sklearn.preprocessing import MaxAbsScaler
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import LogisticRegression
@@ -62,12 +62,24 @@ for mode_file in input_folder.glob("*.csv"):
     df[target] = df[target].map({"WIN": 1, "LOSE": 0})
     print(mode, df[target].unique())
 
-    gss = GroupShuffleSplit(n_splits=11).set_split_request(groups=True) # Number of split for each model
-
     X = df[features]
     y = df[target]
     groups = df["game_id"]
     n_games = len(groups.unique())
+
+    # Number of split for each model
+    if n_games < 50:
+        gss = GroupKFold(
+            n_splits=max(2, n_games//4),
+            shuffle=True,
+            random_state=137
+        ).set_split_request(groups=True)
+    else:
+        gss = GroupShuffleSplit(
+            n_splits=int(16*np.log2(4/50*n_games)),
+            test_size=0.2,
+            random_state=137
+        ).set_split_request(groups=True)
 
     def objective(trial):
         if n_games >= 100:
@@ -152,18 +164,18 @@ for mode_file in input_folder.glob("*.csv"):
             n_jobs=-1
         )
 
-        return scores.mean() - scores.std()
+        return -np.quantile(scores, 1/16)
 
     optuna.logging.set_verbosity(optuna.logging.WARNING)
 
     study = optuna.create_study(
         study_name=mode,
-        direction="maximize",
+        direction="minimize"
     )
 
     study.optimize(
         objective,
-        n_trials=1000,
+        n_trials=100,
         n_jobs=-1,
         show_progress_bar=True
     )
