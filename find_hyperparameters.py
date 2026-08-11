@@ -10,7 +10,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import make_scorer, log_loss
-from scipy.stats import uniform, loguniform
 import sklearn
 import joblib
 import optuna
@@ -87,7 +86,7 @@ for mode_file in input_folder.glob("*.csv"):
             model_type = "LR"
 
         if model_type == "LR":
-            c = trial.suggest_float("C", 0.001, 0.02, log=True)
+            c = trial.suggest_float("C", 0.001, 0.05, log=True)
             l1 = trial.suggest_float("l1_ratio", 0.0, 0.5)
 
             model = LogisticRegression(
@@ -160,9 +159,10 @@ for mode_file in input_folder.glob("*.csv"):
 
         scores = cross_val_score(
             pipeline, X, y,
-            groups=groups, cv=gss,
+            cv=gss,
             scoring=scorer,
-            n_jobs=-1
+            params={"groups": groups},
+            n_jobs=8
         )
 
         return -np.quantile(scores, 1/16)
@@ -179,7 +179,7 @@ for mode_file in input_folder.glob("*.csv"):
     study.optimize(
         objective,
         n_trials=100,
-        n_jobs=1,
+        n_jobs=2,
         show_progress_bar=True
     )
 
