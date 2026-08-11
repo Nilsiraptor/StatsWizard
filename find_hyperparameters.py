@@ -4,7 +4,7 @@ from time import perf_counter as time
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import GroupShuffleSplit, GroupKFold, cross_val_score
-from sklearn.preprocessing import MaxAbsScaler
+from sklearn.preprocessing import RobustScaler
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
@@ -14,7 +14,6 @@ from scipy.stats import uniform, loguniform
 import sklearn
 import joblib
 import optuna
-
 
 
 def build_monotonic_cst(columns):
@@ -56,11 +55,11 @@ for mode_file in input_folder.glob("*.csv"):
     df = pd.read_csv(mode_file)
 
     target = "result"
-    features = df.columns.drop(["result", "gameMode", "gameTime", "game_id"])
+    features = df.columns.drop(["result", "gameMode", "game_id"])
 
     df = df.fillna(0)
     df[target] = df[target].map({"WIN": 1, "LOSE": 0})
-    print(mode, df[target].unique())
+    print(mode, len(features))
 
     X = df[features]
     y = df[target]
@@ -88,8 +87,8 @@ for mode_file in input_folder.glob("*.csv"):
             model_type = "LR"
 
         if model_type == "LR":
-            c = trial.suggest_float("C", 0.01, 0.1, log=True)
-            l1 = trial.suggest_float("l1_ratio", 0.0, 1.0)
+            c = trial.suggest_float("C", 0.001, 0.02, log=True)
+            l1 = trial.suggest_float("l1_ratio", 0.0, 0.5)
 
             model = LogisticRegression(
                 C=c,
@@ -99,12 +98,15 @@ for mode_file in input_folder.glob("*.csv"):
                 max_iter=2000
             )
 
-            pipeline = make_pipeline(MaxAbsScaler(), model)
+            pipeline = make_pipeline(RobustScaler(
+                with_centering=False,
+                quantile_range=(0, 50)
+            ), model)
 
         elif model_type == "RF":
-            trees = trial.suggest_int("n_estimators", 100, 500)
-            samples_leaf = trial.suggest_int("min_samples_leaf", 1, 20)
-            max_features = trial.suggest_categorical("max_features", ["sqrt", "log2"])
+            trees = trial.suggest_int("n_estimators", 100, 1000, step=50)
+            samples_leaf = trial.suggest_int("min_samples_leaf", 5, 20)
+            max_features = trial.suggest_int("max_features", 2, 16)
 
             model = RandomForestClassifier(
                 n_estimators=trees,
@@ -120,14 +122,14 @@ for mode_file in input_folder.glob("*.csv"):
             pipeline = make_pipeline(model)
 
         else:
-            lr = trial.suggest_float("learning_rate", 0.01, 0.2, log=True)
-            trees = trial.suggest_int("max_iter", 100, 1000)
+            lr = trial.suggest_float("learning_rate", 0.01, 1.0, log=True)
+            trees = trial.suggest_int("max_iter", 100, 1000, step=50)
             limit_depth = trial.suggest_categorical("limit_depth", [True, False])
             if limit_depth:
                 depth = trial.suggest_int("max_depth", 3, 20)
             else:
                 depth = None
-            leaf_nodes = trial.suggest_int("min_leaf_nodes", 15, 200)
+            leaf_nodes = trial.suggest_int("max_leaf_nodes", 10, 200)
             samples_leaf = trial.suggest_int("min_samples_leaf", 1, 100)
             use_l2 = trial.suggest_categorical("use_l2", [True, False])
             if use_l2:
@@ -170,7 +172,9 @@ for mode_file in input_folder.glob("*.csv"):
 
     study = optuna.create_study(
         study_name=mode,
-        direction="minimize"
+        direction="minimize",
+        storage="sqlite:///hyperparameter_search.db",
+        load_if_exists=True
     )
 
     study.optimize(
