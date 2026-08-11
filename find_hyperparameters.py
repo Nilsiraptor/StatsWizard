@@ -11,9 +11,40 @@ from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassif
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import make_scorer, log_loss
 from scipy.stats import uniform, loguniform
+import sklearn
 import joblib
 import optuna
 
+
+
+def build_monotonic_cst(columns):
+    positive = [
+        "kills", "assists", "creepScore", "level", "turrets", "inhibs",
+        "dragons", "barons", "heralds", "aces"
+    ]
+    negative = ["deaths"]
+
+    cst = []
+    for feat in columns:
+        if feat.startswith("ally"):
+            sign = 1
+        elif feat.startswith("enemy"):
+            sign = -1
+        else:
+            cst.append(0)
+            continue
+
+        if any(stat in feat for stat in positive):
+            cst.append(sign)
+        elif any(stat in feat for stat in negative):
+            cst.append(-sign)
+        else:
+            cst.append(0)
+
+    return cst
+
+
+sklearn.set_config(enable_metadata_routing=True)
 
 input_folder = Path("GameData")
 
@@ -31,7 +62,7 @@ for mode_file in input_folder.glob("*.csv"):
     df[target] = df[target].map({"WIN": 1, "LOSE": 0})
     print(mode, df[target].unique())
 
-    gss = GroupShuffleSplit(n_splits=11) # Number of split for each model
+    gss = GroupShuffleSplit(n_splits=11).set_split_request(groups=True) # Number of split for each model
 
     X = df[features]
     y = df[target]
@@ -39,7 +70,7 @@ for mode_file in input_folder.glob("*.csv"):
     n_games = len(groups.unique())
 
     def objective(trial):
-        if n_games >= 10000:
+        if n_games >= 100:
             model_type = trial.suggest_categorical("model_type", ["LR", "RF", "HGBM"])
         else:
             model_type = "LR"
@@ -59,28 +90,32 @@ for mode_file in input_folder.glob("*.csv"):
             pipeline = make_pipeline(MaxAbsScaler(), model)
 
         elif model_type == "RF":
-            # trees = trial.suggest_int("n_estimators", 100, 500)
+            trees = trial.suggest_int("n_estimators", 100, 500)
             samples_leaf = trial.suggest_int("min_samples_leaf", 1, 20)
-            features = trial.suggest_categorical("max_features", ["sqrt", "log2"])
+            max_features = trial.suggest_categorical("max_features", ["sqrt", "log2"])
 
             model = RandomForestClassifier(
-                n_estimators=100,
+                n_estimators=trees,
                 max_depth=None,
                 # min_samples_split=samples_split,
                 min_samples_leaf=samples_leaf,
-                max_features=features,
+                max_features=max_features,
                 n_jobs=-1,
                 class_weight="balanced",
-                # monotonic_cst={}
+                monotonic_cst=build_monotonic_cst(features)
             )
 
             pipeline = make_pipeline(model)
 
         else:
             lr = trial.suggest_float("learning_rate", 0.01, 0.2, log=True)
-            # trees = trial.suggest_int("max_iter", 100, 1000)
-            # depth = trial.suggest_int("max_depth", 3, 20)
-            # leaf_nodes = trial.suggest_int("min_leaf_nodes", 15, 200)
+            trees = trial.suggest_int("max_iter", 100, 1000)
+            limit_depth = trial.suggest_categorical("limit_depth", [True, False])
+            if limit_depth:
+                depth = trial.suggest_int("max_depth", 3, 20)
+            else:
+                depth = None
+            leaf_nodes = trial.suggest_int("min_leaf_nodes", 15, 200)
             samples_leaf = trial.suggest_int("min_samples_leaf", 1, 100)
             use_l2 = trial.suggest_categorical("use_l2", [True, False])
             if use_l2:
@@ -90,15 +125,15 @@ for mode_file in input_folder.glob("*.csv"):
 
             model = HistGradientBoostingClassifier(
                 learning_rate=lr,
-                max_iter=100,
-                max_depth=None,
+                max_iter=trees,
+                max_depth=depth,
                 max_leaf_nodes=None,
                 min_samples_leaf=samples_leaf,
                 l2_regularization=l2,
                 early_stopping=True,
                 validation_fraction=0.1,
                 class_weight="balanced",
-                # monotonic_cst={}
+                monotonic_cst=build_monotonic_cst(features)
             )
 
             pipeline = make_pipeline(model)
@@ -128,7 +163,7 @@ for mode_file in input_folder.glob("*.csv"):
 
     study.optimize(
         objective,
-        n_trials=500,
+        n_trials=1000,
         n_jobs=-1,
         show_progress_bar=True
     )
@@ -152,18 +187,16 @@ for mode_file in input_folder.glob("*.csv"):
         final_pipeline.fit(X, y)
 
     elif model == "RF":
-        if not optimum.pop("limit_depth"):
-            optimum["max_depth"] = None
-
         final_model = RandomForestClassifier(
             **optimum,
+            max_depth=None,
             n_jobs=-1,
             class_weight="balanced",
-            # monotonic_cst={}
+            monotonic_cst=build_monotonic_cst(features)
         )
 
         calibrated_model = CalibratedClassifierCV(
-            estimator=model,
+            estimator=final_model,
             method="isotonic",
             cv=gss
         )
@@ -173,22 +206,23 @@ for mode_file in input_folder.glob("*.csv"):
         final_pipeline.fit(X, y, groups=groups)
 
     else:
-        if not optimum.pop("limit_depth"):
+        if not optimum.pop("limit_depth", False):
             optimum["max_depth"] = None
-        if not optimum.pop("use_l2", True):
+        if not optimum.pop("use_l2", False):
             optimum["l2_regularization"] = 0.0
 
         final_model = HistGradientBoostingClassifier(
             **optimum,
             n_jobs=-1,
+            max_leaf_nodes=None,
             early_stopping=True,
             validation_fraction=0.1,
             class_weight="balanced",
-            # monotonic_cst={}
+            monotonic_cst=build_monotonic_cst(features)
         )
 
         calibrated_model = CalibratedClassifierCV(
-            estimator=model,
+            estimator=final_model,
             method="isotonic",
             cv=gss
         )
