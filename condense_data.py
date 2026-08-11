@@ -26,6 +26,8 @@ input_folder = base_path / "GameData"
 for mode_path in input_folder.iterdir():
     if mode_path.is_file(): continue
 
+    print(f"Reading {mode_path.stem} data...")
+
     csv_files = list(mode_path.glob("*.csv"))
 
     # Step 2: Sort the file list so files are processed in chronological order.
@@ -73,7 +75,10 @@ for mode_path in input_folder.iterdir():
 
     # Step 5: Concatenate all DataFrames into one combined dataset.
     # ignore_index=True renumbers the rows so there are no duplicate indices.
-    if len(all_dataframes) == 0: continue
+    if len(all_dataframes) == 0:
+        print(f"No games left to combine. Continuing to next gamemode")
+        print("_"*60, "\n")
+        continue
     combined_df = pd.concat(all_dataframes, ignore_index=True)
     combined_df = combined_df.sort_index(axis=1)
 
