@@ -13,4 +13,4 @@ for mode in ["ARAM", "CLASSIC", "KIWI", "STRAWBERRY"]:
 
         df.to_csv(f"hyperparameter_search_{mode}.csv", index=False)
     except:
-        pass
+        print(f"{mode} skipped. No study found!")
