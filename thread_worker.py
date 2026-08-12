@@ -14,6 +14,7 @@ import pandas as pd
 
 from wizard import GameState, GameAPI
 from authorization import ConnectionError
+from model_tools import make_diff_features
 
 
 class ModelCache:
@@ -56,8 +57,17 @@ class ThreadWorker(QThread):
     def predict_win_probability(self, scores):
         pipeline = self.models.get(scores["gameMode"])
 
-        X = pd.DataFrame([scores])
-        X = X.reindex(columns = pipeline.feature_names_in_, fill_value=0)
+        df = pd.DataFrame([scores])
+
+        features = df.columns.drop(["gameMode"], errors="ignore")
+        X_diff = make_diff_features(df, features)
+
+        X_combined = pd.concat([df, X_diff], axis=1)
+
+        X = X_combined.reindex(
+            columns=pipeline.feature_names_in_,
+            fill_value=0
+        )
 
         proba = pipeline.predict_proba(X)[0]
         classes = list(pipeline.classes_)

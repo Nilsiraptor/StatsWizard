@@ -3,7 +3,7 @@ from time import perf_counter as time
 
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import GroupShuffleSplit, GroupKFold, cross_val_score
+from sklearn.model_selection import GroupShuffleSplit, StratifiedGroupKFold, cross_val_score
 from sklearn.preprocessing import RobustScaler
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import LogisticRegression
@@ -14,32 +14,7 @@ import sklearn
 import joblib
 import optuna
 
-
-def build_monotonic_cst(columns):
-    positive = [
-        "kills", "assists", "creepScore", "level", "turrets", "inhibs",
-        "dragons", "barons", "heralds", "aces"
-    ]
-    negative = ["deaths"]
-
-    cst = []
-    for feat in columns:
-        if feat.startswith("ally"):
-            sign = 1
-        elif feat.startswith("enemy"):
-            sign = -1
-        else:
-            cst.append(0)
-            continue
-
-        if any(stat in feat for stat in positive):
-            cst.append(sign)
-        elif any(stat in feat for stat in negative):
-            cst.append(-sign)
-        else:
-            cst.append(0)
-
-    return cst
+from model_tools import build_monotonic_cst, make_diff_features
 
 
 sklearn.set_config(enable_metadata_routing=True)
@@ -55,20 +30,22 @@ for mode_file in input_folder.glob("*.csv"):
 
     target = "result"
     features = df.columns.drop(["result", "gameMode", "game_id"])
+    monotonic_cst = build_monotonic_cst(features)
 
     df = df.fillna(0)
     df[target] = df[target].map({"WIN": 1, "LOSE": 0})
     print(mode, len(features))
 
     X = df[features]
+    X_lr = make_diff_features(df, features)
     y = df[target]
     groups = df["game_id"]
     n_games = len(groups.unique())
 
     # Number of split for each model
     if n_games < 50:
-        gss = GroupKFold(
-            n_splits=max(2, n_games//4),
+        gss = StratifiedGroupKFold(
+            n_splits=max(2, n_games//2),
             shuffle=True,
             random_state=137
         ).set_split_request(groups=True)
@@ -81,12 +58,12 @@ for mode_file in input_folder.glob("*.csv"):
 
     def objective(trial):
         if n_games >= 100:
-            model_type = trial.suggest_categorical("model_type", ["LR", "RF", "HGBM"])
+            model_type = trial.suggest_categorical("model_type", ["LR", "RF"])
         else:
             model_type = "LR"
 
         if model_type == "LR":
-            c = trial.suggest_float("C", 0.001, 0.05, log=True)
+            c = trial.suggest_float("C", 1e-6, 1.0, log=True)
             l1 = trial.suggest_float("l1_ratio", 0.0, 0.5)
 
             model = LogisticRegression(
@@ -94,34 +71,38 @@ for mode_file in input_folder.glob("*.csv"):
                 l1_ratio=l1,
                 class_weight="balanced",
                 solver="saga",
-                max_iter=2000
+                max_iter=2_000
             )
 
             pipeline = make_pipeline(RobustScaler(
                 with_centering=False,
-                quantile_range=(0, 50)
+                quantile_range=(0, 75)
             ), model)
 
+            X_trial = X_lr
+
         elif model_type == "RF":
-            trees = trial.suggest_int("n_estimators", 100, 1000, step=50)
-            samples_leaf = trial.suggest_int("min_samples_leaf", 5, 20)
-            max_features = trial.suggest_int("max_features", 2, 16)
+            # trees = trial.suggest_int("n_estimators", 100, 1000, step=50)
+            samples_leaf = trial.suggest_int("min_samples_leaf", 1, 20)
+            max_features = trial.suggest_int("max_features", 1, 16)
 
             model = RandomForestClassifier(
-                n_estimators=trees,
+                n_estimators=100,
                 min_samples_leaf=samples_leaf,
                 max_features=max_features,
                 max_depth=None,
-                n_jobs=1,
+                n_jobs=4,
                 class_weight="balanced",
-                monotonic_cst=build_monotonic_cst(features)
+                monotonic_cst=monotonic_cst
             )
 
             pipeline = make_pipeline(model)
 
+            X_trial = X
+
         else:
             lr = trial.suggest_float("learning_rate", 0.01, 1.0, log=True)
-            trees = trial.suggest_int("max_iter", 100, 1000, step=50)
+            # trees = trial.suggest_int("max_iter", 100, 1000, step=50)
             limit_depth = trial.suggest_categorical("limit_depth", [True, False])
             if limit_depth:
                 depth = trial.suggest_int("max_depth", 3, 20)
@@ -137,7 +118,7 @@ for mode_file in input_folder.glob("*.csv"):
 
             model = HistGradientBoostingClassifier(
                 learning_rate=lr,
-                max_iter=trees,
+                max_iter=200,
                 max_depth=depth,
                 max_leaf_nodes=leaf_nodes,
                 min_samples_leaf=samples_leaf,
@@ -145,10 +126,12 @@ for mode_file in input_folder.glob("*.csv"):
                 early_stopping=True,
                 validation_fraction=0.1,
                 class_weight="balanced",
-                monotonic_cst=build_monotonic_cst(features)
+                monotonic_cst=monotonic_cst
             )
 
             pipeline = make_pipeline(model)
+
+            X_trial = X
 
         scorer = make_scorer(
             log_loss,
@@ -158,14 +141,13 @@ for mode_file in input_folder.glob("*.csv"):
         )
 
         scores = cross_val_score(
-            pipeline, X, y,
-            cv=gss,
+            pipeline, X_trial, y,
+            groups=groups, cv=gss,
             scoring=scorer,
-            params={"groups": groups},
-            n_jobs=8
+            n_jobs=4
         )
 
-        return -np.quantile(scores, 1/16)
+        return -np.quantile(scores, 1/8)
 
     optuna.logging.set_verbosity(optuna.logging.WARNING)
 
@@ -178,8 +160,8 @@ for mode_file in input_folder.glob("*.csv"):
 
     study.optimize(
         objective,
-        n_trials=100,
-        n_jobs=2,
+        n_trials=200,
+        n_jobs=-1,
         show_progress_bar=True
     )
 
@@ -199,18 +181,19 @@ for mode_file in input_folder.glob("*.csv"):
 
         final_pipeline = make_pipeline(RobustScaler(
             with_centering=False,
-            quantile_range=(0, 50)
+            quantile_range=(0, 90)
         ), final_model)
 
-        final_pipeline.fit(X, y)
+        final_pipeline.fit(X_lr, y)
 
     elif model == "RF":
         final_model = RandomForestClassifier(
             **optimum,
+            n_estimators=500,
             max_depth=None,
             n_jobs=1,
             class_weight="balanced",
-            monotonic_cst=build_monotonic_cst(features)
+            monotonic_cst=monotonic_cst
         )
 
         calibrated_model = CalibratedClassifierCV(
@@ -232,10 +215,11 @@ for mode_file in input_folder.glob("*.csv"):
 
         final_model = HistGradientBoostingClassifier(
             **optimum,
+            max_iter=500,
             early_stopping=True,
             validation_fraction=0.1,
             class_weight="balanced",
-            monotonic_cst=build_monotonic_cst(features)
+            monotonic_cst=monotonic_cst
         )
 
         calibrated_model = CalibratedClassifierCV(
