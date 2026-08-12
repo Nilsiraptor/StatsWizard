@@ -62,7 +62,8 @@ class ThreadWorker(QThread):
         features = df.columns.drop(["gameMode"], errors="ignore")
         X_diff = make_diff_features(df, features)
 
-        X_combined = pd.concat([df, X_diff], axis=1)
+        new_cols = X_diff.columns.difference(df.columns)
+        X_combined = pd.concat([df, X_diff[new_cols]], axis=1)
 
         X = X_combined.reindex(
             columns=pipeline.feature_names_in_,
