@@ -140,7 +140,7 @@ for mode_file in input_folder.glob("*.csv"):
             pipeline, X_trial, y, groups=groups, cv=gss, scoring=scorer, n_jobs=4
         )
 
-        return -np.quantile(scores, 1 / 8)
+        return -np.quantile(scores, 1 / 4)
 
     optuna.logging.set_verbosity(optuna.logging.WARNING)
 
@@ -167,7 +167,7 @@ for mode_file in input_folder.glob("*.csv"):
         )
 
         final_pipeline = make_pipeline(
-            RobustScaler(with_centering=False, quantile_range=(0, 90)), final_model
+            RobustScaler(with_centering=False, quantile_range=(0, 75)), final_model
         )
 
         final_pipeline.fit(X_lr, y)
