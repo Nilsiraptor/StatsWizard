@@ -24,7 +24,7 @@ app = QApplication(sys.argv)
 app.setStyleSheet("""
     QWidget {
         background-color: white;
-        color: black;
+        color: darkslategrey;
         padding: 0px;
         margin: 0px;
     }

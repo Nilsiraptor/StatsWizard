@@ -152,6 +152,13 @@ class LiveGraph(FigureCanvasQTAgg):
         rcParams["font.weight"] = "medium"
         rcParams["font.size"] = FONT_SIZE
 
+        COLOR = "darkslategrey"
+        rcParams["text.color"] = COLOR
+        rcParams["axes.labelcolor"] = COLOR
+        rcParams["xtick.color"] = COLOR
+        rcParams["ytick.color"] = COLOR
+        rcParams["axes.edgecolor"] = COLOR
+
         rcParams["figure.frameon"] = False
         rcParams["figure.constrained_layout.use"] = True
 
