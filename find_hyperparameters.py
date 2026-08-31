@@ -71,9 +71,7 @@ for mode_file in input_folder.glob("*.csv"):
                 C=c, l1_ratio=l1, class_weight="balanced", solver="saga", max_iter=2_000
             )
 
-            pipeline = make_pipeline(
-                RobustScaler(with_centering=False, quantile_range=(0, 75)), model
-            )
+            pipeline = make_pipeline(RobustScaler(with_centering=False), model)
 
             X_trial = X_lr
 
