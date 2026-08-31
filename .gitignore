@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+
+# Virtual environment
+.venv/
+
+# Game data (user-specific, large)
+GameData/
+
+# DataDragon cache
+DataDragon/
