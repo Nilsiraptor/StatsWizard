@@ -9,3 +9,6 @@ GameData/
 
 # DataDragon cache
 DataDragon/
+
+# BackUp Data
+*.zip
