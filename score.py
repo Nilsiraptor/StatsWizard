@@ -6,7 +6,7 @@ and saves them as CSV files organized by game mode.
 """
 
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -83,9 +83,7 @@ def main():
                     mode = df["gameMode"][0]
                     mode_path = Path("GameData") / mode
                     file_name = (
-                        datetime.now(datetime.timezone.utc)
-                        .replace(microsecond=0)
-                        .isoformat()
+                        datetime.now(timezone.utc).replace(microsecond=0).isoformat()
                     )
                     file_name = file_name.replace(":", "_")
                     csv_path = (mode_path / file_name).with_suffix(".csv")
