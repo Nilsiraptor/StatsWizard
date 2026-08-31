@@ -4,16 +4,16 @@ This module provides the core API for communicating with the League
 of Legends client, including game state detection, score collection,
 and item gold calculation.
 """
-from collections import defaultdict
+
 import http
+from collections import defaultdict
 from enum import Enum, auto
 
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
-from authorization import get_pem_port, ConnectionError
+from authorization import ConnectionError, get_pem_port
 from dragon import get_gold_value
-
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -24,6 +24,7 @@ class GameState(Enum):
     States range from no client detected through various game phases
     to game over.
     """
+
     NO_CLIENT = auto()
     CLIENT_FOUND = auto()
     LOBBY = auto()
@@ -34,6 +35,7 @@ class GameState(Enum):
     GAME_OVER = auto()
     UNDEFINED = auto()
 
+
 PHASE_MAPPING = {
     "None": GameState.CLIENT_FOUND,
     "Lobby": GameState.LOBBY,
@@ -41,12 +43,13 @@ PHASE_MAPPING = {
     "ReadyCheck": GameState.READY_CHECK,
     "ChampSelect": GameState.CHAMP_SELECT,
     "InProgress": GameState.RUNNING,
-    "EndOfGame": GameState.GAME_OVER
+    "EndOfGame": GameState.GAME_OVER,
 }
 
 
 class GameResult(Enum):
     """Represents the outcome of a League of Legends game."""
+
     WIN = auto()
     LOSE = auto()
 
@@ -92,7 +95,7 @@ class GameAPI:
 
         try:
             response = requests.get(url, auth=self.user, verify=False)
-        except requests.exceptions.ConnectionError as e:
+        except requests.exceptions.ConnectionError:
             return GameState.NO_CLIENT
 
         # Check if the response contains the "gameData" field, which indicates the user is in a game
@@ -117,9 +120,9 @@ class GameAPI:
 
         try:
             response = requests.get(url, verify=False)
-        except requests.exceptions.ConnectionError as e:
+        except requests.exceptions.ConnectionError:
             raise ConnectionError()
-        except http.client.RemoteDisconnected as e:
+        except http.client.RemoteDisconnected:
             raise ConnectionError()
 
         if response.status_code == 200:
@@ -146,7 +149,7 @@ class GameAPI:
 
             try:
                 response = requests.get(url, verify=False)
-            except requests.exceptions.ConnectionError as e:
+            except requests.exceptions.ConnectionError:
                 raise ConnectionError()
             else:
                 if response.status_code == 200:
@@ -160,7 +163,7 @@ class GameAPI:
 
         try:
             response = requests.get(url, verify=False)
-        except requests.exceptions.ConnectionError as e:
+        except requests.exceptions.ConnectionError:
             raise ConnectionError
         else:
             if response.status_code == 200:
@@ -277,7 +280,11 @@ class GameAPI:
         player_data = self.get_data("playerlist")
 
         for p in player_data:
-            items = [item["itemID"] for item in p["items"] if include_consumables or not item["consumable"]]
+            items = [
+                item["itemID"]
+                for item in p["items"]
+                if include_consumables or not item["consumable"]
+            ]
             if p["team"] == team:
                 ally_items += items
             else:
@@ -288,7 +295,8 @@ class GameAPI:
 
         return ally_gold, enemy_gold
 
-if __name__ ==  "__main__":
+
+if __name__ == "__main__":
     try:
         state = GameAPI()
     except ConnectionError:

@@ -17,14 +17,14 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
-
 # Step 1: Define the input directory containing all the game CSV files.
 # We use a glob pattern to match any file ending in .csv inside the folder.
 base_path = Path(__file__).parent
 input_folder = base_path / "GameData"
 
 for mode_path in input_folder.iterdir():
-    if mode_path.is_file(): continue
+    if mode_path.is_file():
+        continue
 
     print(f"Reading {mode_path.stem} data...")
 
@@ -53,13 +53,16 @@ for mode_path in input_folder.iterdir():
     games_combined = 0
     for csv_file in tqdm(csv_files, desc="Loading game files", unit="file"):
         df = pd.read_csv(csv_file, index_col=0)
-        if not "result" in df.columns: continue
+        if not "result" in df.columns:
+            continue
 
         has_NONE_labels = True in ["NONE" in label for label in df.columns]
         has__labels = True in ["__" in label for label in df.columns]
 
-        if mode_path.stem == "CLASSIC" and has_NONE_labels: continue
-        if has__labels: continue
+        if mode_path.stem == "CLASSIC" and has_NONE_labels:
+            continue
+        if has__labels:
+            continue
 
         games_combined += 1
 
@@ -76,8 +79,8 @@ for mode_path in input_folder.iterdir():
     # Step 5: Concatenate all DataFrames into one combined dataset.
     # ignore_index=True renumbers the rows so there are no duplicate indices.
     if len(all_dataframes) == 0:
-        print(f"No games left to combine. Continuing to next gamemode")
-        print("_"*60, "\n")
+        print("No games left to combine. Continuing to next gamemode")
+        print("_" * 60, "\n")
         continue
     combined_df = pd.concat(all_dataframes, ignore_index=True)
     combined_df = combined_df.sort_index(axis=1)
@@ -92,4 +95,4 @@ for mode_path in input_folder.iterdir():
     print(f"Used Data from {games_combined} games.")
     print(f"Combined rows: {len(combined_df)}")
     print(f"Output saved to: {output_path}")
-    print("_"*60, "\n")
+    print("_" * 60, "\n")

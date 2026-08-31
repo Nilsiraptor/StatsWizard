@@ -4,17 +4,18 @@ This module provides a Qt thread worker that periodically checks the
 League of Legends client for game state changes and collects live
 score data while a game is in progress.
 """
+
+from pathlib import Path
 from time import perf_counter as time
 from time import sleep
-from pathlib import Path
 
-from PyQt6.QtCore import QThread, pyqtSignal
 import joblib
 import pandas as pd
+from PyQt6.QtCore import QThread, pyqtSignal
 
-from wizard import GameState, GameAPI
 from authorization import ConnectionError
 from model_tools import make_diff_features
+from wizard import GameAPI, GameState
 
 
 class ModelCache:
@@ -65,10 +66,7 @@ class ThreadWorker(QThread):
         new_cols = X_diff.columns.difference(df.columns)
         X_combined = pd.concat([df, X_diff[new_cols]], axis=1)
 
-        X = X_combined.reindex(
-            columns=pipeline.feature_names_in_,
-            fill_value=0
-        )
+        X = X_combined.reindex(columns=pipeline.feature_names_in_, fill_value=0)
 
         proba = pipeline.predict_proba(X)[0]
         classes = list(pipeline.classes_)
@@ -81,14 +79,16 @@ class ThreadWorker(QThread):
 
         while self.running:
             run_time = time() - t
-            if self.pause > run_time: sleep(self.pause - run_time)
+            if self.pause > run_time:
+                sleep(self.pause - run_time)
             t = time()
 
             if GameState.NO_CLIENT == last_state:
                 try:
                     self.api = GameAPI()
-                except ConnectionError as e:
-                    if self.running: continue
+                except ConnectionError:
+                    if self.running:
+                        continue
 
             curr_state = self.api.check_game_state()
 
@@ -99,17 +99,21 @@ class ThreadWorker(QThread):
             if GameState.RUNNING == curr_state:
                 try:
                     live_scores = self.api.get_scores()
-                except ConnectionError as e:
+                except ConnectionError:
                     self.state_changed.emit(GameState.NO_CLIENT)
                     last_state = GameState.NO_CLIENT
-                    if self.running: continue
+                    if self.running:
+                        continue
 
                 if "result" in live_scores:
-                    if self.running: continue
+                    if self.running:
+                        continue
 
                 try:
                     win_prob = self.predict_win_probability(live_scores)
-                    self.prediction_updated.emit(live_scores["gameTime"], float(win_prob))
+                    self.prediction_updated.emit(
+                        live_scores["gameTime"], float(win_prob)
+                    )
                 except (FileNotFoundError, KeyError) as e:
                     print(e)
 

@@ -1,12 +1,12 @@
 import optuna
 
 for mode in ["ARAM", "CLASSIC", "KIWI", "STRAWBERRY"]:
-    if mode != "ARAM": pass
+    if mode != "ARAM":
+        pass
 
     try:
         study = optuna.load_study(
-            study_name=mode,
-            storage="sqlite:///hyperparameter_search.db"
+            study_name=mode, storage="sqlite:///hyperparameter_search.db"
         )
 
         df = study.trials_dataframe()

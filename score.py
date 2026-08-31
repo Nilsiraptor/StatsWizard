@@ -4,13 +4,15 @@ This module runs as a background data collector that connects to the
 League of Legends client, gathers game statistics at regular intervals,
 and saves them as CSV files organized by game mode.
 """
-import pandas as pd
+
 import time
 from datetime import datetime
 from pathlib import Path
 
-from wizard import GameAPI, GameState, GameResult
+import pandas as pd
+
 from authorization import ConnectionError
+from wizard import GameAPI, GameResult, GameState
 
 
 def main():
@@ -45,7 +47,6 @@ def main():
                     t = time.time()
 
                 if time.time() - t >= 10:
-
                     try:
                         scores = wizard.get_scores()
                     except ConnectionError:
@@ -86,7 +87,7 @@ def main():
                     csv_path = (mode_path / file_name).with_suffix(".csv")
                     try:
                         df.to_csv(csv_path, na_rep="0")
-                    except OSError as e:
+                    except OSError:
                         mode_path.mkdir(parents=True, exist_ok=True)
                     else:
                         df = None

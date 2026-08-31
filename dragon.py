@@ -1,5 +1,6 @@
-import os
 import json
+import os
+
 import requests
 
 
@@ -20,7 +21,11 @@ def update():
     if not os.path.exists("DataDragon\\" + versions[0]):
         os.mkdir("DataDragon\\" + versions[0])
 
-        url = "http://ddragon.leagueoflegends.com/cdn/" + versions[0] + "/data/en_US/item.json"
+        url = (
+            "http://ddragon.leagueoflegends.com/cdn/"
+            + versions[0]
+            + "/data/en_US/item.json"
+        )
         data = requests.get(url).json()
         with open("DataDragon\\" + versions[0] + "\\item.json", "w") as file:
             json.dump(data, file)

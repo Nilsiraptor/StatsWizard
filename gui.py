@@ -4,27 +4,22 @@ This module implements the main window, a live graph display, and a
 statistics panel that shows real-time game data during League of
 Legends matches.
 """
-import sys
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QLabel
-from PyQt6.QtWidgets import QHBoxLayout, QGridLayout
-from PyQt6.QtGui import QFont, QFontDatabase, QIcon
+import numpy as np
+from matplotlib import font_manager, rcParams
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from matplotlib import font_manager, rcParams
-from matplotlib.ticker import MultipleLocator, MaxNLocator, AutoMinorLocator, PercentFormatter
+from matplotlib.ticker import AutoMinorLocator, MaxNLocator, PercentFormatter
 from PyQt6.QtCore import Qt
-import numpy as np
+from PyQt6.QtGui import QFont, QFontDatabase, QIcon
+from PyQt6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QMainWindow, QWidget
 from scipy.interpolate import Akima1DInterpolator
 
 from thread_worker import ThreadWorker
 from wizard import GameState
 
-
 FONT_SIZE = 12
-FONT_FEATURES = ["calt", "tnum", "dlig",
-                 "cv01", "cv03", "cv04",
-                 "cv05", "cv08", "cv09"]
+FONT_FEATURES = ["calt", "tnum", "dlig", "cv01", "cv03", "cv04", "cv05", "cv08", "cv09"]
 
 
 class MainWindow(QMainWindow):
@@ -123,9 +118,13 @@ class MainWindow(QMainWindow):
             case GameState.QUEUE:
                 self.statusBar().showMessage("Queue erkannt - Warte auf Spielstart...")
             case GameState.READY_CHECK:
-                self.statusBar().showMessage("Queue erkannt - Spiel gefunden - Bitte annehmen")
+                self.statusBar().showMessage(
+                    "Queue erkannt - Spiel gefunden - Bitte annehmen"
+                )
             case GameState.CHAMP_SELECT:
-                self.statusBar().showMessage("Champion-Auswahl erkannt - Warte auf Spielstart...")
+                self.statusBar().showMessage(
+                    "Champion-Auswahl erkannt - Warte auf Spielstart..."
+                )
             case GameState.RUNNING:
                 self.statusBar().showMessage("Laufendes Spiel erkannt")
             case GameState.GAME_OVER:
@@ -174,10 +173,14 @@ class LiveGraph(FigureCanvasQTAgg):
         # self.ax.set_ylabel("Win Probability", fontfeatures=FONT_FEATURES)
         self.ax.set_ylim(0, 100)
         self.ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-        self.ax.yaxis.set_major_locator(MaxNLocator("auto", steps=[1, 2, 2.5, 5, 10], integer=True))
+        self.ax.yaxis.set_major_locator(
+            MaxNLocator("auto", steps=[1, 2, 2.5, 5, 10], integer=True)
+        )
         self.ax.yaxis.set_major_formatter(PercentFormatter(xmax=100))
         self.ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-        self.ax.xaxis.set_major_locator(MaxNLocator("auto", steps=[1, 2, 3, 4, 5, 6], integer=True))
+        self.ax.xaxis.set_major_locator(
+            MaxNLocator("auto", steps=[1, 2, 3, 4, 5, 6], integer=True)
+        )
 
         # self.ax.set_xlabel("Timeline", fontfeatures=FONT_FEATURES)
         self.ax.set_xlim(-120, 0)
@@ -206,11 +209,13 @@ class LiveGraph(FigureCanvasQTAgg):
 
     def interpolate(self):
         try:
-            interp = Akima1DInterpolator(self.x - self.x[-1], 100*self.y, method="makima")
+            interp = Akima1DInterpolator(
+                self.x - self.x[-1], 100 * self.y, method="makima"
+            )
             show_x = np.linspace(-120, 0, 1001, True)
             return show_x, interp(show_x)
         except ValueError:
-            return self.x - self.x[-1], 100*self.y
+            return self.x - self.x[-1], 100 * self.y
 
     def sync_matplotlib_dpi(self, new_screen):
         """Resynchronizes the figure DPI when the display screen changes.
@@ -249,11 +254,25 @@ class StatDisplay(QWidget):
         self.layout = QGridLayout()
         self.setLayout(self.layout)
 
-        self.stat_names = ["level", "kills", "deaths", "assists", "creepScore", "wardScore", "gold", "turrets", "inhibs", "heralds", "dragons", "barons", "aces"]
+        self.stat_names = [
+            "level",
+            "kills",
+            "deaths",
+            "assists",
+            "creepScore",
+            "wardScore",
+            "gold",
+            "turrets",
+            "inhibs",
+            "heralds",
+            "dragons",
+            "barons",
+            "aces",
+        ]
         stat_display_name = {
             "creepScore": "Minions",
             "wardScore": "Wards",
-            "item_gold": "Item Gold"
+            "item_gold": "Item Gold",
         }
 
         self.stats = {}

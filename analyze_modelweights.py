@@ -3,9 +3,9 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
-
 for mode in Path("models").iterdir():
-    if mode.suffix != ".joblib": continue
+    if mode.suffix != ".joblib":
+        continue
 
     model = joblib.load(mode)
 

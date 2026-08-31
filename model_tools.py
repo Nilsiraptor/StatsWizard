@@ -3,8 +3,16 @@ import pandas as pd
 
 def build_monotonic_cst(columns):
     positive = [
-        "kills", "assists", "creepScore", "level", "turrets", "inhibs",
-        "dragons", "barons", "heralds", "aces"
+        "kills",
+        "assists",
+        "creepScore",
+        "level",
+        "turrets",
+        "inhibs",
+        "dragons",
+        "barons",
+        "heralds",
+        "aces",
     ]
     negative = ["deaths"]
 
@@ -26,6 +34,7 @@ def build_monotonic_cst(columns):
             cst.append(0)
 
     return cst
+
 
 def make_diff_features(df, features, drop=["gameTime"]):
     diff_cols = {}
